@@ -1,4 +1,4 @@
-# TaskFlow
+# TaskBoard
 
 Aplicação full stack de gerenciamento de tarefas.
 
@@ -50,7 +50,12 @@ Após a inicialização:
 
 Para encerrar os serviços, execute `docker compose down`.
 
+## Integração contínua
+
+[![CI](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml)
+
+Em cada `push` e `pull request`, o GitHub Actions valida o backend (Ruff, Black e pytest com PostgreSQL), o frontend (ESLint e build de produção) e os builds dos Dockerfiles.
+
 ## Status
 
 Em desenvolvimento. Esta etapa contém apenas a fundação técnica; autenticação, categorias e tarefas ainda não foram implementadas.
-

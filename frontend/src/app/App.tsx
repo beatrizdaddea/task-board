@@ -8,7 +8,7 @@ export function App() {
           TF
         </span>
         <div>
-          <h1 id="page-title">TaskFlow</h1>
+          <h1 id="page-title">TaskBoard</h1>
           <p>A fundação do projeto está pronta. Novas funcionalidades virão em breve.</p>
         </div>
       </section>
