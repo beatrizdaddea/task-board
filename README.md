@@ -59,8 +59,8 @@ Em cada `push` e `pull request`, o GitHub Actions valida o backend (Ruff, Black 
 ## Status
 
 Em desenvolvimento. Autenticação JWT e o CRUD privado de categorias estão
-implementados, assim como o CRUD privado de tarefas. A documentação dos
-endpoints está em `docs/api/`.
+implementados, assim como o CRUD de tarefas e o compartilhamento com permissões
+de leitura ou edição. A documentação dos endpoints está em `docs/api/`.
 
 ## Decisões do domínio de tarefas
 
