@@ -58,4 +58,5 @@ Em cada `push` e `pull request`, o GitHub Actions valida o backend (Ruff, Black 
 
 ## Status
 
-Em desenvolvimento. Esta etapa contém apenas a fundação técnica; autenticação, categorias e tarefas ainda não foram implementadas.
+Em desenvolvimento. Autenticação JWT e o CRUD privado de categorias estão
+implementados. A documentação dos endpoints está em `docs/api/`.
