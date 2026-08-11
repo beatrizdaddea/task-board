@@ -36,10 +36,51 @@ payload nem a resposta e é sempre obtido do token autenticado.
 - Método: `GET`
 - Rota: `/api/v1/tasks/`
 - Autenticação: obrigatória
-- Parâmetros: nenhum
+- Query params opcionais:
+  - `completed`: `true` ou `false`;
+  - `category`: ID inteiro da categoria;
+  - `priority`: `low`, `medium` ou `high`;
+  - `search`: texto pesquisado em `title` e `description`;
+  - `ordering`: `created_at`, `-created_at` ou `due_date`;
+  - `page`: número da página.
 - Request: sem corpo
-- Response `200 OK`: lista de representações das tarefas do usuário
-- Principal erro: `401 Unauthorized` sem access token válido
+- Response `200 OK`:
+
+```json
+{
+  "count": 23,
+  "next": "http://localhost:8000/api/v1/tasks/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "title": "Preparar relatório",
+      "description": "Consolidar os resultados do mês.",
+      "completed": false,
+      "priority": "high",
+      "due_date": "2026-08-20",
+      "category": 2,
+      "created_at": "2026-08-11T14:30:00-03:00",
+      "updated_at": "2026-08-11T14:30:00-03:00"
+    }
+  ]
+}
+```
+
+A página contém até 10 tarefas. Filtros, pesquisa e ordenação podem ser
+combinados, por exemplo:
+
+```text
+/api/v1/tasks/?completed=false&category=2&priority=high
+```
+
+Prioridade inválida e categoria não numérica retornam `400 Bad Request`. Um
+valor de `completed` diferente de `true` ou `false` é tratado como filtro vazio
+pelo `BooleanFilter`. Campos de ordenação não permitidos são ignorados pelo DRF
+e mantêm a ordenação padrão. Uma página inexistente retorna `404 Not Found`.
+
+- Principais erros: `400 Bad Request` para filtro inválido; `401 Unauthorized`
+  sem access token válido; `404 Not Found` para página inexistente
 
 ## Criar tarefa
 
