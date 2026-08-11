@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -8,42 +7,7 @@ from apps.tasks.models import Task
 
 pytestmark = pytest.mark.django_db
 
-User = get_user_model()
 TASKS_URL = "/api/v1/tasks/"
-
-
-@pytest.fixture
-def api_client() -> APIClient:
-    return APIClient()
-
-
-@pytest.fixture
-def owner():
-    return User.objects.create_user(
-        username="owner",
-        email="owner@example.com",
-        password="safe-password-123",
-    )
-
-
-@pytest.fixture
-def other_user():
-    return User.objects.create_user(
-        username="other",
-        email="other@example.com",
-        password="safe-password-123",
-    )
-
-
-@pytest.fixture
-def authenticated_client(api_client: APIClient, owner) -> APIClient:
-    api_client.force_authenticate(user=owner)
-    return api_client
-
-
-@pytest.fixture
-def category(owner) -> Category:
-    return Category.objects.create(name="Trabalho", owner=owner)
 
 
 @pytest.fixture
@@ -113,7 +77,7 @@ def test_list_only_authenticated_users_tasks(
     response = authenticated_client.get(TASKS_URL)
 
     assert response.status_code == status.HTTP_200_OK
-    assert [item["id"] for item in response.json()] == [own_task.pk]
+    assert [item["id"] for item in response.json()["results"]] == [own_task.pk]
 
 
 def test_retrieve_task(authenticated_client: APIClient, task: Task) -> None:
