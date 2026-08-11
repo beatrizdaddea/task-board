@@ -1,8 +1,13 @@
 # API de tarefas
 
-Todas as rotas exigem o header `Authorization: Bearer <access_token>`. Cada
-usuário visualiza e manipula somente as próprias tarefas. Um ID inexistente ou
-pertencente a outro usuário retorna `404 Not Found`.
+Todas as rotas exigem o header `Authorization: Bearer <access_token>`. A
+listagem inclui tarefas próprias e tarefas compartilhadas com o usuário. Um ID
+sem relação de propriedade ou compartilhamento retorna `404 Not Found`.
+
+O owner possui acesso completo. Um compartilhamento `read` permite somente
+leitura; `edit` também permite alterar campos comuns e concluir ou reabrir. A
+categoria e a exclusão permanecem exclusivas do owner. O gerenciamento de
+compartilhamentos está documentado em `docs/api/task-sharing.md`.
 
 ## Representação
 
@@ -133,7 +138,8 @@ e mantêm a ordenação padrão. Uma página inexistente retorna `404 Not Found`
 - Response `200 OK`: representação atualizada da tarefa
 - Principais erros: `400 Bad Request` para campos inválidos ou categoria que
   não pertence ao usuário; `401 Unauthorized` sem access token válido;
-  `404 Not Found` para tarefa inexistente ou pertencente a outro usuário
+  `403 Forbidden` para compartilhamento somente leitura; `404 Not Found` para
+  tarefa sem relação com o usuário
 
 Conclusão e reabertura usam este mesmo endpoint:
 
@@ -153,5 +159,6 @@ Envie `false` para reabrir a tarefa.
 - Parâmetro de rota: `id`, identificador inteiro da tarefa
 - Request: sem corpo
 - Response `204 No Content`: sem corpo
-- Principais erros: `401 Unauthorized` sem access token válido; `404 Not Found`
-  para tarefa inexistente ou pertencente a outro usuário
+- Principais erros: `401 Unauthorized` sem access token válido; `403 Forbidden`
+  para qualquer usuário compartilhado; `404 Not Found` para tarefa sem relação
+  com o usuário
