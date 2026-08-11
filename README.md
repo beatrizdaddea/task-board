@@ -59,4 +59,15 @@ Em cada `push` e `pull request`, o GitHub Actions valida o backend (Ruff, Black 
 ## Status
 
 Em desenvolvimento. Autenticação JWT e o CRUD privado de categorias estão
-implementados. A documentação dos endpoints está em `docs/api/`.
+implementados, assim como o CRUD privado de tarefas. A documentação dos
+endpoints está em `docs/api/`.
+
+## Decisões do domínio de tarefas
+
+- A conclusão e a reabertura alteram `completed` via `PATCH` no próprio recurso;
+  não há endpoint específico para essa transição.
+- O proprietário é sempre obtido do token JWT e não pode ser escolhido pelo
+  payload.
+- Categoria, descrição e data de vencimento são opcionais. Quando informada, a
+  categoria precisa pertencer ao proprietário da tarefa. A exclusão de uma
+  categoria não exclui suas tarefas; elas permanecem sem categoria.
