@@ -39,3 +39,31 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TaskShare(models.Model):
+    class Permission(models.TextChoices):
+        READ = "read", "Leitura"
+        EDIT = "edit", "Edição"
+
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name="shares",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="task_shares",
+    )
+    permission = models.CharField(max_length=4, choices=Permission.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")
+        constraints = (
+            models.UniqueConstraint(
+                fields=("task", "user"),
+                name="unique_task_share_per_user",
+            ),
+        )
