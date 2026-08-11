@@ -3,7 +3,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "development-only-secret-key")
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY", "development-only-change-me-at-least-32-chars"
+)
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in {"1", "true", "yes"}
 ALLOWED_HOSTS = [
     host.strip()
@@ -79,6 +81,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "accounts.User"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+}
 
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
