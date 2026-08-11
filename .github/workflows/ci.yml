@@ -11,13 +11,13 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: TaskBoard
-          POSTGRES_USER: TaskBoard
-          POSTGRES_PASSWORD: TaskBoard
+          POSTGRES_DB: taskboard
+          POSTGRES_USER: taskboard
+          POSTGRES_PASSWORD: taskboard
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U TaskBoard -d TaskBoard"
+          --health-cmd "pg_isready -U taskboard -d taskboard"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
@@ -25,12 +25,12 @@ jobs:
       run:
         working-directory: backend
     env:
-      POSTGRES_DB: TaskBoard
-      POSTGRES_USER: TaskBoard
-      POSTGRES_PASSWORD: TaskBoard
+      POSTGRES_DB: taskboard
+      POSTGRES_USER: taskboard
+      POSTGRES_PASSWORD: taskboard
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
-      DJANGO_SECRET_KEY: ci-only-secret-key
+      DJANGO_SECRET_KEY: ci-only-secret-key-change-this-for-safety-at-least-50-chars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -65,5 +65,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build --tag TaskBoard-backend:ci backend
-      - run: docker build --tag TaskBoard-frontend:ci frontend
+      - run: docker build --tag taskboard-backend:ci backend
+      - run: docker build --tag taskboard-frontend:ci frontend
