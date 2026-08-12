@@ -31,7 +31,7 @@ import { ApiError } from '@/shared/lib/http/ApiError'
 
 type ShareFormProps = {
   taskId: number
-  onSuccess: (message: string) => void
+  onSuccess: () => void
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,7 +58,7 @@ export function ShareForm({ taskId, onSuccess }: ShareFormProps) {
     try {
       await createShare.mutateAsync(values)
       reset()
-      onSuccess('Tarefa compartilhada com sucesso.')
+      onSuccess()
     } catch (error: unknown) {
       if (error instanceof ApiError && isRecord(error.details)) {
         for (const fieldName of ['user_email', 'permission'] as const) {

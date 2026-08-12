@@ -1,4 +1,3 @@
-import { AlertCircleIcon, CheckCircle2Icon } from 'lucide-react'
 import { useState } from 'react'
 
 import { ShareForm } from '@/features/sharing/components/ShareForm'
@@ -10,7 +9,6 @@ import type {
   TaskShare,
 } from '@/features/sharing/types/shareTypes'
 import type { Task } from '@/features/tasks/types/taskTypes'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +27,9 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Spinner } from '@/shared/components/ui/spinner'
+import { useToast } from '@/shared/hooks/useToast'
+
+const TOAST_DURATION = 10_000
 
 type ShareDialogProps = {
   task: Task
@@ -37,22 +38,21 @@ type ShareDialogProps = {
 }
 
 export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
+  const { add: showToast } = useToast()
   const sharesQuery = useShares(task.id)
   const { updateShare, deleteShare } = useShareMutations(task.id)
   const [shareToRemove, setShareToRemove] = useState<TaskShare | null>(null)
-  const [notice, setNotice] = useState<{
-    kind: 'success' | 'error'
-    message: string
-  } | null>(null)
   const canManage = task.permissions.can_manage_shares
 
   const showError = (error: unknown) => {
-    setNotice({
-      kind: 'error',
-      message:
+    showToast({
+      type: 'error',
+      title: 'Não foi possível concluir a ação',
+      description:
         error instanceof Error
           ? error.message
           : 'Não foi possível concluir a operação.',
+      timeout: TOAST_DURATION,
     })
   }
 
@@ -60,10 +60,14 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
     share: TaskShare,
     permission: SharePermission,
   ) => {
-    setNotice(null)
     try {
       await updateShare.mutateAsync({ shareId: share.id, permission })
-      setNotice({ kind: 'success', message: 'Permissão atualizada.' })
+      showToast({
+        type: 'info',
+        title: 'Permissão atualizada',
+        description: 'A permissão de compartilhamento foi atualizada.',
+        timeout: TOAST_DURATION,
+      })
     } catch (error: unknown) {
       showError(error)
     }
@@ -74,7 +78,12 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
     try {
       await deleteShare.mutateAsync(shareToRemove.id)
       setShareToRemove(null)
-      setNotice({ kind: 'success', message: 'Compartilhamento removido.' })
+      showToast({
+        type: 'error',
+        title: 'Compartilhamento removido',
+        description: 'O acesso à tarefa foi removido com sucesso.',
+        timeout: TOAST_DURATION,
+      })
     } catch (error: unknown) {
       setShareToRemove(null)
       showError(error)
@@ -92,23 +101,17 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          {notice ? (
-            <Alert
-              variant={notice.kind === 'error' ? 'destructive' : 'default'}
-            >
-              {notice.kind === 'error' ? (
-                <AlertCircleIcon />
-              ) : (
-                <CheckCircle2Icon />
-              )}
-              <AlertDescription>{notice.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
           {canManage ? (
             <ShareForm
               taskId={task.id}
-              onSuccess={(message) => setNotice({ kind: 'success', message })}
+              onSuccess={() =>
+                showToast({
+                  type: 'share',
+                  title: 'Tarefa compartilhada',
+                  description: 'Tarefa compartilhada com sucesso!',
+                  timeout: TOAST_DURATION,
+                })
+              }
             />
           ) : null}
 
