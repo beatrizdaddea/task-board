@@ -26,14 +26,9 @@ frontend/src/
 │   ├── router/                 # Rotas e composição das páginas
 │   └── App.tsx
 ├── features/
-│   └── auth/
-│       ├── api/                # Chamadas HTTP da feature
-│       ├── components/         # UI específica de autenticação
-│       ├── context/            # Estado da sessão e AuthProvider
-│       ├── hooks/              # Mutations e queries da feature
-│       ├── pages/              # Páginas ligadas ao router
-│       ├── schemas/            # Schemas Zod e tipos inferidos
-│       └── types/              # Contratos de resposta do domínio
+│   ├── auth/                   # Sessão, login e cadastro
+│   ├── tasks/                  # Listagem, filtros e CRUD de tarefas
+│   └── categories/             # Listagem e CRUD de categorias
 ├── shared/
 │   ├── components/             # shadcn/ui e reexportações padronizadas
 │   ├── lib/                    # Client HTTP, tokens, QueryClient e helpers
@@ -41,10 +36,9 @@ frontend/src/
 └── main.tsx
 ```
 
-As fronteiras previstas são `auth`, `tasks`, `categories` e `sharing`. Somente
-`auth` existe nesta fase porque é o exemplo funcional solicitado; as demais
-pastas serão criadas quando tiverem componentes, hooks, serviços ou tipos reais,
-evitando diretórios vazios e abstrações prematuras.
+As fronteiras previstas são `auth`, `tasks`, `categories` e `sharing`. As três
+primeiras possuem implementação funcional; `sharing` será criada quando tiver
+código próprio, evitando diretórios vazios e abstrações prematuras.
 
 ### Decisões técnicas
 
@@ -121,10 +115,11 @@ npm run preview
 
 ## Componentes shadcn/ui
 
-Os primitivos iniciais são `Button`, `Input`, `Select`, `Dialog`, `Spinner`,
-`Skeleton`, `Empty`, `Pagination`, `Card`, `Field` e `Alert`, além das
-dependências internas `Label` e `Separator`. Novos componentes devem ser
-adicionados com a CLI oficial e mantidos dentro de `shared/components/ui`.
+Os primitivos iniciais são `Button`, `Input`, `Textarea`, `Select`, `Dialog`,
+`AlertDialog`, `Badge`, `Spinner`, `Skeleton`, `Empty`, `Pagination`, `Card`,
+`Field` e `Alert`, além das dependências internas `Label` e `Separator`. Novos
+componentes devem ser adicionados com a CLI oficial e mantidos dentro de
+`shared/components/ui`.
 
 ## API e autenticação
 
@@ -136,7 +131,9 @@ Fluxos disponíveis no frontend:
 - `/login`: envia `username` e `password` para
   `POST /api/v1/auth/login/`, armazena somente o access token e redireciona para
   `/dashboard` ou para a rota protegida originalmente solicitada.
-- `/dashboard`: rota protegida. Sem token válido, redireciona para `/login`.
+- `/dashboard`: rota protegida com o gerenciamento de tarefas. Sem token válido,
+  redireciona para `/login`.
+- `/categories`: rota protegida com o gerenciamento das categorias do usuário.
 - `/login` e `/register`: rotas exclusivas para visitantes. Uma sessão válida
   redireciona diretamente para `/dashboard`.
 
@@ -148,6 +145,43 @@ O estado da sessão fica em `features/auth/context`, mutations ficam em
 `features/auth/hooks` e chamadas HTTP em `features/auth/api`. Novas features
 devem repetir essa separação apenas quando tiverem código real, mantendo UI,
 schemas, tipos e serviços próximos do domínio que os utiliza.
+
+### Gerenciamento de tarefas
+
+A página protegida usa exclusivamente a API REST existente:
+
+- `GET /api/v1/tasks/` lista tarefas com `search`, `completed`, `category`,
+  `priority` e `page`. A busca possui debounce de 400 ms e os filtros são
+  processados no backend.
+- `POST /api/v1/tasks/` cria; `PATCH /api/v1/tasks/{id}/` edita ou alterna
+  `completed`; `DELETE /api/v1/tasks/{id}/` exclui após confirmação.
+- `GET /api/v1/categories/` fornece as opções do formulário e do filtro.
+- A paginação usa `count`, `next`, `previous` e `results` do DRF, com 10 itens
+  por página conforme a configuração atual do backend.
+
+O TanStack Query mantém o cache e invalida as listas após mutações. O formulário
+reutilizável de criação e edição usa React Hook Form e Zod e mapeia os erros de
+campo retornados pelo DRF.
+
+A resposta de tarefas inclui `category_name`, `is_shared` e capacidades em
+`permissions`. O frontend usa essas capacidades para ocultar edição, mudança de
+status e exclusão quando não autorizadas; o backend permanece como autoridade
+final e continua validando cada operação.
+
+### Gerenciamento de categorias
+
+A rota protegida `/categories` consome o CRUD em `/api/v1/categories/` e oferece
+listagem, criação, edição e exclusão com confirmação. O formulário valida nomes
+entre 3 e 100 caracteres e apresenta erros de duplicidade retornados pelo DRF.
+
+`useCategories` é o ponto público da feature para leitura e também abastece o
+filtro e o formulário de tarefas. As mutations invalidam os caches de categorias
+e tarefas para refletir renomes ou exclusões sem duplicar chamadas HTTP.
+
+O modelo atual usa `SET_NULL` ao excluir uma categoria associada: nenhuma tarefa
+é excluída. O frontend também reconhece respostas `400` ou `409` como categoria
+em uso e apresenta uma mensagem específica caso o backend passe a bloquear essa
+operação.
 
 A documentação completa dos endpoints está em `docs/api/`.
 
@@ -174,8 +208,9 @@ builds dos Dockerfiles.
 
 O backend possui autenticação JWT, CRUD privado de categorias e tarefas e
 compartilhamento com permissões de leitura ou edição. O frontend possui login,
-registro, persistência da sessão, logout e guards para rotas públicas e
-protegidas.
+registro, persistência da sessão, guards de rota e gerenciamento de tarefas com
+busca, filtros, paginação, criação, edição, conclusão e exclusão, além do CRUD de
+categorias integrado aos formulários de tarefas.
 
 ## Decisões do domínio de tarefas
 
