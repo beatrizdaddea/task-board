@@ -29,6 +29,7 @@ frontend/src/
 │   └── auth/
 │       ├── api/                # Chamadas HTTP da feature
 │       ├── components/         # UI específica de autenticação
+│       ├── context/            # Estado da sessão e AuthProvider
 │       ├── hooks/              # Mutations e queries da feature
 │       ├── pages/              # Páginas ligadas ao router
 │       ├── schemas/            # Schemas Zod e tipos inferidos
@@ -58,11 +59,14 @@ evitando diretórios vazios e abstrações prematuras.
   no React Hook Form e não há Redux.
 - Serviços por feature usam o wrapper central baseado em `fetch`; componentes
   não fazem requisições diretamente.
-- O client adiciona headers comuns, JWT e uma única tentativa de refresh em
-  respostas `401`, compartilhando a renovação entre requisições simultâneas.
-- Os tokens ficam em `sessionStorage`, isolados por aba e removidos ao encerrar a
-  sessão do navegador. Isso reduz persistência, mas não substitui cookies
-  `HttpOnly`; uma migração exigiria suporte correspondente no backend.
+- O client adiciona headers comuns e o JWT às requisições autenticadas. Uma
+  resposta `401` encerra a sessão e faz os guards redirecionarem para o login.
+- Somente o access token fica em `localStorage`. O frontend valida a estrutura e
+  o campo `exp` do JWT na inicialização e agenda o logout para sua expiração. O
+  refresh token retornado pelo backend não é persistido nesta implementação.
+- `localStorage` mantém a sessão entre abas e reinicializações do navegador, mas
+  é acessível a JavaScript. Uma evolução para cookies `HttpOnly` exige suporte
+  coordenado no backend e revisão da proteção contra CSRF.
 - TypeScript opera em modo estrito e validações de formulário usam schemas Zod
   próximos da feature.
 
@@ -83,6 +87,11 @@ Serviços disponíveis:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:8000
 - PostgreSQL: acessível internamente pelo serviço `db`
+
+O backend aceita requisições do frontend somente para as origens listadas em
+`CORS_ALLOWED_ORIGINS`. No ambiente local, o valor padrão do Compose é
+`http://localhost:5173`. Após alterar dependências ou essa variável, recrie o
+serviço com `docker compose up --build`.
 
 Para encerrar, execute `docker compose down`.
 
@@ -113,15 +122,46 @@ npm run preview
 ## Componentes shadcn/ui
 
 Os primitivos iniciais são `Button`, `Input`, `Select`, `Dialog`, `Spinner`,
-`Empty`, `Pagination`, `Card`, `Field` e `Alert`, além das dependências internas
-`Label` e `Separator`. Novos componentes devem ser adicionados com a CLI oficial
-e mantidos dentro de `shared/components/ui`.
+`Skeleton`, `Empty`, `Pagination`, `Card`, `Field` e `Alert`, além das
+dependências internas `Label` e `Separator`. Novos componentes devem ser
+adicionados com a CLI oficial e mantidos dentro de `shared/components/ui`.
 
 ## API e autenticação
 
-O exemplo de login usa `POST /api/v1/auth/login/` e a renovação usa
-`POST /api/v1/auth/refresh/`. A documentação completa dos endpoints está em
-`docs/api/`.
+Fluxos disponíveis no frontend:
+
+- `/register`: envia `username`, `email` e `password` para
+  `POST /api/v1/auth/register/`. Erros de validação do DRF são apresentados no
+  campo correspondente. Após sucesso, redireciona para `/login`.
+- `/login`: envia `username` e `password` para
+  `POST /api/v1/auth/login/`, armazena somente o access token e redireciona para
+  `/dashboard` ou para a rota protegida originalmente solicitada.
+- `/dashboard`: rota protegida. Sem token válido, redireciona para `/login`.
+- `/login` e `/register`: rotas exclusivas para visitantes. Uma sessão válida
+  redireciona diretamente para `/dashboard`.
+
+Embora o cadastro também exija um e-mail único, o backend atual mantém
+`username` como `USERNAME_FIELD` do Django e o endpoint JWT autentica por nome de
+usuário. Login por e-mail requer uma alteração futura e explícita no backend.
+
+O estado da sessão fica em `features/auth/context`, mutations ficam em
+`features/auth/hooks` e chamadas HTTP em `features/auth/api`. Novas features
+devem repetir essa separação apenas quando tiverem código real, mantendo UI,
+schemas, tipos e serviços próximos do domínio que os utiliza.
+
+A documentação completa dos endpoints está em `docs/api/`.
+
+### CORS
+
+`CORS_ALLOWED_ORIGINS` recebe uma lista separada por vírgulas contendo esquema,
+host e porta completos, por exemplo:
+
+```env
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://taskboard.example.com
+```
+
+A allowlist é aplicada somente às rotas `/api/`. Não use `*` em produção;
+adicione explicitamente a origem em que o frontend estiver hospedado.
 
 ## Integração contínua
 
@@ -133,8 +173,9 @@ builds dos Dockerfiles.
 ## Status
 
 O backend possui autenticação JWT, CRUD privado de categorias e tarefas e
-compartilhamento com permissões de leitura ou edição. O frontend possui agora a
-fundação Feature-Based e um fluxo mínimo de login para validar os padrões.
+compartilhamento com permissões de leitura ou edição. O frontend possui login,
+registro, persistência da sessão, logout e guards para rotas públicas e
+protegidas.
 
 ## Decisões do domínio de tarefas
 
