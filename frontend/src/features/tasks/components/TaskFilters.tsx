@@ -1,8 +1,8 @@
-import { SearchIcon } from 'lucide-react'
+import { PlusIcon, SearchIcon, SlidersHorizontalIcon } from 'lucide-react'
 
-import type { Category } from '@/features/categories/types/categoryTypes'
 import type { StatusFilter } from '@/features/tasks/hooks/useTaskFilters'
 import type { TaskPriority } from '@/features/tasks/types/taskTypes'
+import { Button } from '@/shared/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/shared/components/ui/field'
 import { Input } from '@/shared/components/ui/input'
 import {
@@ -13,8 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/shared/components/ui/sheet'
 
-type FilterOption<TValue extends string = string> = Readonly<{
+type FilterOption<TValue extends string> = Readonly<{
   value: TValue
   label: string
 }>
@@ -35,20 +45,20 @@ const PRIORITY_OPTIONS = [
 type TaskFiltersProps = {
   search: string
   status: StatusFilter
-  category: string
   priority: 'all' | TaskPriority
-  categories: Category[]
   onSearchChange: (value: string) => void
   onStatusChange: (value: StatusFilter) => void
-  onCategoryChange: (value: string) => void
   onPriorityChange: (value: 'all' | TaskPriority) => void
+  onCreate: () => void
 }
 
 export function TaskFilters(props: TaskFiltersProps) {
   return (
-    <FieldGroup className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <Field>
-        <FieldLabel htmlFor="task-search">Buscar</FieldLabel>
+    <div className="flex items-end gap-2">
+      <Field className="min-w-0 flex-1">
+        <FieldLabel htmlFor="task-search" className="sr-only">
+          Buscar tarefas
+        </FieldLabel>
         <div className="relative">
           <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
           <Input
@@ -56,40 +66,88 @@ export function TaskFilters(props: TaskFiltersProps) {
             type="search"
             value={props.search}
             onChange={(event) => props.onSearchChange(event.target.value)}
-            placeholder="Título ou descrição"
+            placeholder="Buscar título ou descrição..."
             className="pl-8"
           />
         </div>
       </Field>
 
+      <div className="lg:hidden">
+        <Sheet>
+          <SheetTrigger render={<Button variant="outline" />}>
+            <SlidersHorizontalIcon data-icon="inline-start" />
+            <span className="hidden sm:inline">Filtros</span>
+            <span className="sr-only sm:hidden">Abrir filtros</span>
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="max-h-[85svh] rounded-t-2xl pb-[max(1rem,env(safe-area-inset-bottom))]"
+          >
+            <SheetHeader>
+              <SheetTitle>Filtrar tarefas</SheetTitle>
+              <SheetDescription>
+                Refine a lista por status e prioridade.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="overflow-y-auto px-4">
+              <TaskAdvancedFilters
+                idPrefix="mobile"
+                status={props.status}
+                priority={props.priority}
+                onStatusChange={props.onStatusChange}
+                onPriorityChange={props.onPriorityChange}
+              />
+            </div>
+            <SheetFooter>
+              <SheetClose render={<Button />}>Ver tarefas</SheetClose>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <Button
+        type="button"
+        className="hidden shrink-0 lg:inline-flex"
+        onClick={props.onCreate}
+      >
+        <PlusIcon data-icon="inline-start" />
+        Nova tarefa
+      </Button>
+    </div>
+  )
+}
+
+type TaskAdvancedFiltersProps = {
+  idPrefix: 'mobile' | 'desktop'
+  status: StatusFilter
+  priority: 'all' | TaskPriority
+  onStatusChange: (value: StatusFilter) => void
+  onPriorityChange: (value: 'all' | TaskPriority) => void
+}
+
+export function TaskAdvancedFilters({
+  idPrefix,
+  status,
+  priority,
+  onStatusChange,
+  onPriorityChange,
+}: TaskAdvancedFiltersProps) {
+  return (
+    <FieldGroup>
       <FilterSelect
-        id="task-status"
+        id={`${idPrefix}-task-status`}
         label="Status"
-        value={props.status}
+        value={status}
         placeholder="Selecione o status"
-        onValueChange={props.onStatusChange}
+        onValueChange={onStatusChange}
         options={STATUS_OPTIONS}
       />
       <FilterSelect
-        id="task-category"
-        label="Categoria"
-        value={props.category}
-        placeholder="Selecione a categoria"
-        onValueChange={props.onCategoryChange}
-        options={[
-          { value: 'all', label: 'Todas' },
-          ...props.categories.map((category) => ({
-            value: String(category.id),
-            label: category.name,
-          })),
-        ]}
-      />
-      <FilterSelect
-        id="task-priority"
+        id={`${idPrefix}-task-priority`}
         label="Prioridade"
-        value={props.priority}
+        value={priority}
         placeholder="Selecione a prioridade"
-        onValueChange={props.onPriorityChange}
+        onValueChange={onPriorityChange}
         options={PRIORITY_OPTIONS}
       />
     </FieldGroup>

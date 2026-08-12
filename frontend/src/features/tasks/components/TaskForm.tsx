@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertCircleIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 
 import type { Category } from '@/features/categories/types/categoryTypes'
 import { useTaskMutations } from '@/features/tasks/hooks/useTaskMutations'
@@ -14,6 +15,7 @@ import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -39,16 +41,20 @@ const PRIORITY_OPTIONS = [
 
 type TaskFormProps = {
   task?: Task
+  defaultCategoryId?: string
   categories: Category[]
+  categoriesLoading: boolean
   onCancel: () => void
-  onSuccess: (message: string) => void
+  onSuccess: (action: 'created' | 'updated') => void
 }
 
-function defaultValues(task?: Task): TaskFormInput {
+function defaultValues(task?: Task, defaultCategoryId?: string): TaskFormInput {
   return {
     title: task?.title ?? '',
     description: task?.description ?? '',
-    category: task?.category ? String(task.category) : '',
+    category: task?.category
+      ? String(task.category)
+      : (defaultCategoryId ?? ''),
     priority: task?.priority ?? 'medium',
     due_date: task?.due_date ?? '',
   }
@@ -60,12 +66,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function TaskForm({
   task,
+  defaultCategoryId,
   categories,
+  categoriesLoading,
   onCancel,
   onSuccess,
 }: TaskFormProps) {
   const { createTask, updateTask } = useTaskMutations()
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const validDefaultCategoryId = categories.some(
+    (category) => String(category.id) === defaultCategoryId,
+  )
+    ? defaultCategoryId
+    : undefined
   const {
     register,
     control,
@@ -74,7 +87,7 @@ export function TaskForm({
     formState: { errors },
   } = useForm<TaskFormInput>({
     resolver: zodResolver(taskSchema),
-    defaultValues: defaultValues(task),
+    defaultValues: defaultValues(task, validDefaultCategoryId),
   })
   const mutation = task ? updateTask : createTask
   const categoryOptions = [
@@ -92,6 +105,12 @@ export function TaskForm({
       label: category.name,
     })),
   ]
+  const hasCategoryOptions = categoryOptions.length > 0
+  const categoryPlaceholder = categoriesLoading
+    ? 'Carregando categorias...'
+    : hasCategoryOptions
+      ? 'Selecione uma categoria'
+      : 'Nenhuma categoria cadastrada'
 
   const submitTask = handleSubmit(async (values) => {
     setSubmitError(null)
@@ -101,9 +120,7 @@ export function TaskForm({
       } else {
         await createTask.mutateAsync(values)
       }
-      onSuccess(
-        task ? 'Tarefa atualizada com sucesso.' : 'Tarefa criada com sucesso.',
-      )
+      onSuccess(task ? 'updated' : 'created')
     } catch (error: unknown) {
       if (error instanceof ApiError && isRecord(error.details)) {
         const fieldNames: Array<keyof TaskFormInput> = [
@@ -161,24 +178,31 @@ export function TaskForm({
           name="category"
           control={control}
           render={({ field }) => (
-            <Field data-invalid={Boolean(errors.category)}>
+            <Field
+              data-invalid={Boolean(errors.category)}
+              data-disabled={categoriesLoading || !hasCategoryOptions}
+            >
               <FieldLabel htmlFor="task-category-field">Categoria</FieldLabel>
               <Select
                 items={categoryOptions}
                 value={field.value}
                 onValueChange={(value) => field.onChange(value ?? '')}
-                disabled={task ? !task.permissions.can_edit_category : false}
+                disabled={
+                  categoriesLoading ||
+                  !hasCategoryOptions ||
+                  (task ? !task.permissions.can_edit_category : false)
+                }
               >
                 <SelectTrigger
                   id="task-category-field"
                   className="w-full"
                   aria-invalid={Boolean(errors.category)}
                 >
-                  <SelectValue placeholder="Selecione uma categoria">
+                  <SelectValue placeholder={categoryPlaceholder}>
                     {(selectedValue: string | null) =>
                       categoryOptions.find(
                         (option) => option.value === selectedValue,
-                      )?.label ?? 'Selecione uma categoria'
+                      )?.label ?? categoryPlaceholder
                     }
                   </SelectValue>
                 </SelectTrigger>
@@ -192,6 +216,11 @@ export function TaskForm({
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              {!categoriesLoading && !hasCategoryOptions ? (
+                <FieldDescription>
+                  Crie uma categoria antes de cadastrar uma tarefa.
+                </FieldDescription>
+              ) : null}
               <FieldError errors={[errors.category]} />
             </Field>
           )}
@@ -250,12 +279,20 @@ export function TaskForm({
         </Field>
       </FieldGroup>
 
-      {categories.length === 0 ? (
+      {!categoriesLoading && categories.length === 0 ? (
         <Alert>
           <AlertCircleIcon />
-          <AlertDescription>
-            Cadastre uma categoria na página de categorias antes de criar
-            tarefas.
+          <AlertDescription className="flex flex-col items-start gap-3">
+            Nenhuma categoria cadastrada. Crie a primeira categoria para
+            organizar suas tarefas.
+            <Button
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+              render={<Link to="/categories" />}
+            >
+              Criar categoria
+            </Button>
           </AlertDescription>
         </Alert>
       ) : null}
@@ -273,7 +310,9 @@ export function TaskForm({
         </Button>
         <Button
           type="submit"
-          disabled={mutation.isPending || categories.length === 0}
+          disabled={
+            mutation.isPending || categoriesLoading || !hasCategoryOptions
+          }
         >
           {mutation.isPending ? <Spinner data-icon="inline-start" /> : null}
           {mutation.isPending ? 'Salvando...' : 'Salvar tarefa'}
