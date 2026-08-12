@@ -195,6 +195,8 @@ def test_read_user_can_list_and_retrieve_shared_task(
         "can_edit_category": False,
         "can_delete": False,
         "can_change_status": False,
+        "can_view_shares": True,
+        "can_manage_shares": False,
     }
 
 
@@ -226,7 +228,7 @@ def test_read_user_cannot_modify_shared_task(
     assert task.completed is False
 
 
-def test_read_user_cannot_manage_shares(
+def test_read_user_can_list_but_cannot_manage_shares(
     api_client: APIClient, task: Task, other_user, third_user
 ) -> None:
     share = create_share(task=task, user=other_user)
@@ -243,7 +245,8 @@ def test_read_user_cannot_manage_shares(
     )
     delete_response = api_client.delete(share_detail_url(share))
 
-    assert list_response.status_code == status.HTTP_404_NOT_FOUND
+    assert list_response.status_code == status.HTTP_200_OK
+    assert [item["id"] for item in list_response.json()] == [share.pk]
     assert create_response.status_code == status.HTTP_404_NOT_FOUND
     assert delete_response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -267,6 +270,8 @@ def test_edit_user_can_retrieve_and_edit_shared_task(
         "can_edit_category": False,
         "can_delete": False,
         "can_change_status": True,
+        "can_view_shares": True,
+        "can_manage_shares": False,
     }
     assert update_response.status_code == status.HTTP_200_OK
     task.refresh_from_db()

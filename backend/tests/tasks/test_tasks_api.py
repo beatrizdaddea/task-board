@@ -47,6 +47,8 @@ def test_create_task_with_defaults(authenticated_client: APIClient, owner) -> No
             "can_edit_category": True,
             "can_delete": True,
             "can_change_status": True,
+            "can_view_shares": True,
+            "can_manage_shares": True,
         },
         "created_at": response.json()["created_at"],
         "updated_at": response.json()["updated_at"],

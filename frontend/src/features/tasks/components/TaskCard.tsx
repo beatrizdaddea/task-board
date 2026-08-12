@@ -29,6 +29,7 @@ type TaskCardProps = {
   onEdit: (task: Task) => void
   onToggleStatus: (task: Task) => void
   onDelete: (task: Task) => void
+  onShare: (task: Task) => void
 }
 
 export function TaskCard({
@@ -38,6 +39,7 @@ export function TaskCard({
   onEdit,
   onToggleStatus,
   onDelete,
+  onShare,
 }: TaskCardProps) {
   const canEdit = task.permissions.can_edit
   const canDelete = task.permissions.can_delete
@@ -118,6 +120,17 @@ export function TaskCard({
             onClick={() => onEdit(task)}
           >
             <PencilIcon data-icon="inline-start" /> Editar
+          </Button>
+        ) : null}
+        {task.permissions.can_view_shares ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onShare(task)}
+          >
+            <Share2Icon data-icon="inline-start" />
+            {task.permissions.can_manage_shares ? 'Compartilhar' : 'Acessos'}
           </Button>
         ) : null}
         {canDelete ? (

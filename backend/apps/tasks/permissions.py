@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 
@@ -25,10 +26,17 @@ class TaskAccessPermission(permissions.BasePermission):
 
 class IsTaskOwnerForSharing(permissions.BasePermission):
     def has_permission(self, request, view) -> bool:
+        if request.method in permissions.SAFE_METHODS:
+            view.task = get_object_or_404(
+                Task.objects.filter(
+                    Q(owner=request.user) | Q(shares__user=request.user)
+                ).distinct(),
+                pk=view.kwargs["task_id"],
+            )
+            return True
+
         view.task = get_object_or_404(
-            Task,
-            pk=view.kwargs["task_id"],
-            owner=request.user,
+            Task, pk=view.kwargs["task_id"], owner=request.user
         )
         return True
 

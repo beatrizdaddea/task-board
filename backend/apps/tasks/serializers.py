@@ -56,6 +56,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "can_edit_category": is_owner,
             "can_delete": is_owner,
             "can_change_status": can_edit,
+            "can_view_shares": True,
+            "can_manage_shares": is_owner,
         }
 
     def __init__(self, *args, **kwargs):

@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
+import { ShareDialog } from '@/features/sharing/components/ShareDialog'
 import { TaskFilters } from '@/features/tasks/components/TaskFilters'
 import { TaskForm } from '@/features/tasks/components/TaskForm'
 import { TaskList } from '@/features/tasks/components/TaskList'
@@ -53,6 +54,7 @@ export function TasksPage() {
   const { deleteTask, changeStatus } = useTaskMutations()
   const [formTask, setFormTask] = useState<Task | null | undefined>(undefined)
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const [taskToShare, setTaskToShare] = useState<Task | null>(null)
   const [notice, setNotice] = useState<{
     kind: 'success' | 'error'
     message: string
@@ -220,6 +222,7 @@ export function TasksPage() {
               onEdit={(task) => setFormTask(task)}
               onToggleStatus={(task) => void toggleStatus(task)}
               onDelete={setTaskToDelete}
+              onShare={setTaskToShare}
             />
           </div>
 
@@ -317,6 +320,15 @@ export function TasksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {taskToShare ? (
+        <ShareDialog
+          key={taskToShare.id}
+          task={taskToShare}
+          open
+          onOpenChange={(open) => !open && setTaskToShare(null)}
+        />
+      ) : null}
     </main>
   )
 }

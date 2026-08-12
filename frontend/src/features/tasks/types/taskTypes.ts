@@ -9,6 +9,8 @@ export type TaskPermissions = {
   can_edit_category: boolean
   can_delete: boolean
   can_change_status: boolean
+  can_view_shares: boolean
+  can_manage_shares: boolean
 }
 
 export type Task = {

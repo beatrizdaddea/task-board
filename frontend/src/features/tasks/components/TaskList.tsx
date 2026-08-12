@@ -29,6 +29,7 @@ type TaskListProps = {
   onEdit: (task: Task) => void
   onToggleStatus: (task: Task) => void
   onDelete: (task: Task) => void
+  onShare: (task: Task) => void
 }
 
 export function TaskList(props: TaskListProps) {
@@ -98,6 +99,7 @@ export function TaskList(props: TaskListProps) {
           onEdit={props.onEdit}
           onToggleStatus={props.onToggleStatus}
           onDelete={props.onDelete}
+          onShare={props.onShare}
         />
       ))}
     </div>
