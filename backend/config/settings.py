@@ -3,15 +3,20 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def get_csv_environment(name: str, default: str = "") -> list[str]:
+    return [
+        value.strip() for value in os.getenv(name, default).split(",") if value.strip()
+    ]
+
+
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY", "development-only-change-me-at-least-32-chars"
 )
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() in {"1", "true", "yes"}
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
+ALLOWED_HOSTS = get_csv_environment("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+CORS_ALLOWED_ORIGINS = get_csv_environment("CORS_ALLOWED_ORIGINS")
+CORS_URLS_REGEX = r"^/api/.*$"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -22,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "django_filters",
+    "corsheaders",
     "apps.accounts.apps.AccountsConfig",
     "apps.categories.apps.CategoriesConfig",
     "apps.tasks.apps.TasksConfig",
@@ -30,6 +36,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
