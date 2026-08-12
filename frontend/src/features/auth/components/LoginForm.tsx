@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertCircleIcon } from 'lucide-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { getAuthErrorMessage } from '@/features/auth/api/authErrors'
+import { useLogin } from '@/features/auth/hooks/useLogin'
 import {
   loginSchema,
   type LoginInput,
-} from '@/features/auth/schemas/loginSchema'
-import { useLoginMutation } from '@/features/auth/hooks/useLoginMutation'
+} from '@/features/auth/schemas/authSchemas'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -23,7 +25,8 @@ type LoginFormProps = {
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const loginMutation = useLoginMutation()
+  const loginMutation = useLogin()
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -34,11 +37,13 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   })
 
   const submitLogin = handleSubmit(async (credentials) => {
+    setSubmitError(null)
+
     try {
       await loginMutation.mutateAsync(credentials)
       onSuccess()
-    } catch {
-      return
+    } catch (error: unknown) {
+      setSubmitError(getAuthErrorMessage(error))
     }
   })
 
@@ -46,7 +51,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     <form className="flex flex-col gap-5" onSubmit={submitLogin} noValidate>
       <FieldGroup>
         <Field data-invalid={Boolean(errors.username)}>
-          <FieldLabel htmlFor="username">Usuário</FieldLabel>
+          <FieldLabel htmlFor="username">Nome de usuário</FieldLabel>
           <Input
             id="username"
             autoComplete="username"
@@ -69,10 +74,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </Field>
       </FieldGroup>
 
-      {loginMutation.isError ? (
+      {submitError ? (
         <Alert variant="destructive">
           <AlertCircleIcon />
-          <AlertDescription>{loginMutation.error.message}</AlertDescription>
+          <AlertDescription>{submitError}</AlertDescription>
         </Alert>
       ) : null}
 

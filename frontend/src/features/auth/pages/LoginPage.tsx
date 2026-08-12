@@ -1,21 +1,27 @@
-import { Navigate, useNavigate } from 'react-router-dom'
+import { CheckCircle2Icon } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { LoginForm } from '@/features/auth/components/LoginForm'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card'
-import { tokenStorage } from '@/shared/lib/auth/tokenStorage'
+
+type LoginLocationState = {
+  from?: { pathname?: string }
+  registered?: boolean
+}
 
 export function LoginPage() {
+  const location = useLocation()
   const navigate = useNavigate()
-
-  if (tokenStorage.getAccessToken()) {
-    return <Navigate to="/" replace />
-  }
+  const state = location.state as LoginLocationState | null
+  const destination = state?.from?.pathname ?? '/dashboard'
 
   return (
     <main className="bg-muted/40 grid min-h-svh place-items-center p-6">
@@ -23,12 +29,31 @@ export function LoginPage() {
         <CardHeader>
           <CardTitle>Entrar no TaskBoard</CardTitle>
           <CardDescription>
-            Use suas credenciais para acessar suas tarefas.
+            Use seu nome de usuário e senha para acessar suas tarefas.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <LoginForm onSuccess={() => navigate('/', { replace: true })} />
+        <CardContent className="flex flex-col gap-5">
+          {state?.registered ? (
+            <Alert>
+              <CheckCircle2Icon />
+              <AlertDescription>
+                Conta criada. Entre com suas credenciais.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          <LoginForm
+            onSuccess={() => navigate(destination, { replace: true })}
+          />
         </CardContent>
+        <CardFooter className="text-muted-foreground justify-center text-sm">
+          Ainda não tem conta?{' '}
+          <Link
+            to="/register"
+            className="text-foreground font-medium underline underline-offset-4"
+          >
+            Cadastre-se
+          </Link>
+        </CardFooter>
       </Card>
     </main>
   )

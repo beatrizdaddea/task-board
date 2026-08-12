@@ -1,0 +1,18 @@
+import { Navigate, Outlet } from 'react-router-dom'
+
+import { AuthRouteSkeleton } from '@/features/auth/components/AuthRouteSkeleton'
+import { useAuth } from '@/features/auth/hooks/useAuth'
+
+export function PublicOnlyRoute() {
+  const { isAuthenticated, isInitializing } = useAuth()
+
+  if (isInitializing) {
+    return <AuthRouteSkeleton />
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <Outlet />
+}
