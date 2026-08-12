@@ -1,19 +1,18 @@
-import {
-  AlertCircleIcon,
-  CheckCircle2Icon,
-  TagsIcon,
-  LogOutIcon,
-  PlusIcon,
-} from 'lucide-react'
+import { AlertCircleIcon, LogOutIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { ShareDialog } from '@/features/sharing/components/ShareDialog'
-import { TaskFilters } from '@/features/tasks/components/TaskFilters'
+import { TaskCategoryNav } from '@/features/tasks/components/TaskCategoryNav'
+import {
+  TaskAdvancedFilters,
+  TaskFilters,
+} from '@/features/tasks/components/TaskFilters'
 import { TaskForm } from '@/features/tasks/components/TaskForm'
 import { TaskList } from '@/features/tasks/components/TaskList'
+import { useTaskCategoryCounts } from '@/features/tasks/hooks/useTaskCategoryCounts'
 import { useTaskFilters } from '@/features/tasks/hooks/useTaskFilters'
 import { useTaskMutations } from '@/features/tasks/hooks/useTaskMutations'
 import { useTasks } from '@/features/tasks/hooks/useTasks'
@@ -29,7 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/shared/components/ui/alert'
-import { Button } from '@/shared/components/ui/button'
+import { Button, buttonVariants } from '@/shared/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -42,46 +41,65 @@ import {
   PaginationContent,
   PaginationItem,
 } from '@/shared/components/ui/pagination'
+import { Separator } from '@/shared/components/ui/separator'
 import { Spinner } from '@/shared/components/ui/spinner'
+import { useToast } from '@/shared/hooks/useToast'
+import { cn } from '@/shared/lib/utils'
 
 const PAGE_SIZE = 10
+const TOAST_DURATION = 2000
 
 export function TasksPage() {
+  const { add: showToast } = useToast()
   const { logout } = useAuth()
   const taskFilters = useTaskFilters()
   const tasksQuery = useTasks(taskFilters.filters)
   const categoriesQuery = useCategories()
   const { deleteTask, changeStatus } = useTaskMutations()
   const [formTask, setFormTask] = useState<Task | null | undefined>(undefined)
+  const [newTaskCategoryId, setNewTaskCategoryId] = useState<
+    string | undefined
+  >()
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
   const [taskToShare, setTaskToShare] = useState<Task | null>(null)
-  const [notice, setNotice] = useState<{
-    kind: 'success' | 'error'
-    message: string
-  } | null>(null)
   const categories = categoriesQuery.data ?? []
+  const categoryCounts = useTaskCategoryCounts(
+    categories.map((category) => category.id),
+  )
   const isFormOpen = formTask !== undefined
 
+  const openCreateForm = () => {
+    setNewTaskCategoryId(
+      taskFilters.category === 'all' ? undefined : taskFilters.category,
+    )
+    setFormTask(null)
+  }
+
   const showError = (error: unknown) => {
-    setNotice({
-      kind: 'error',
-      message:
+    showToast({
+      type: 'error',
+      title: 'Não foi possível concluir a ação',
+      description:
         error instanceof Error
           ? error.message
           : 'Não foi possível concluir a operação.',
+      timeout: TOAST_DURATION,
     })
   }
 
   const toggleStatus = async (task: Task) => {
-    setNotice(null)
     try {
       await changeStatus.mutateAsync({
         taskId: task.id,
         completed: !task.completed,
       })
-      setNotice({
-        kind: 'success',
-        message: task.completed ? 'Tarefa reaberta.' : 'Tarefa concluída.',
+      showToast({
+        type: 'info',
+        title: task.completed ? 'Tarefa reaberta' : 'Tarefa concluída',
+        description: task.completed
+          ? 'A tarefa voltou para o status em aberto.'
+          : 'A tarefa foi marcada como concluída.',
+        timeout: TOAST_DURATION,
       })
     } catch (error: unknown) {
       showError(error)
@@ -93,16 +111,29 @@ export function TasksPage() {
     try {
       await deleteTask.mutateAsync(taskToDelete.id)
       setTaskToDelete(null)
-      setNotice({ kind: 'success', message: 'Tarefa excluída com sucesso.' })
+      showToast({
+        type: 'error',
+        title: 'Tarefa removida',
+        description: 'Tarefa removida com sucesso!',
+        timeout: TOAST_DURATION,
+      })
     } catch (error: unknown) {
       setTaskToDelete(null)
       showError(error)
     }
   }
 
-  const finishForm = (message: string) => {
+  const finishForm = (action: 'created' | 'updated') => {
     setFormTask(undefined)
-    setNotice({ kind: 'success', message })
+    showToast({
+      type: action === 'created' ? 'success' : 'info',
+      title: action === 'created' ? 'Tarefa criada' : 'Tarefa atualizada',
+      description:
+        action === 'created'
+          ? 'Tarefa criada com sucesso!'
+          : 'Tarefa atualizada com sucesso!',
+      timeout: TOAST_DURATION,
+    })
   }
 
   const firstItem = tasksQuery.data?.count
@@ -113,157 +144,180 @@ export function TasksPage() {
     : 0
 
   return (
-    <main className="min-h-svh px-4 py-6 sm:px-6">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-muted-foreground text-sm">TaskBoard</p>
-            <h1 className="text-2xl font-semibold tracking-tight">
+    <main className="min-h-svh px-4 pt-4 pb-24 sm:px-6 lg:py-6">
+      <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
+        <header className="flex items-center justify-between gap-4 border-b pb-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              TaskBoard
+            </p>
+            <h1 className="text-xl font-semibold tracking-tight whitespace-nowrap md:text-2xl">
               Minhas tarefas
             </h1>
+            <p className="text-muted-foreground hidden text-sm sm:block">
+              Organize prioridades, prazos e andamento em um só lugar.
+            </p>
           </div>
-          <nav
-            className="flex flex-wrap items-center gap-2"
-            aria-label="Navegação principal"
+          <Button
+            type="button"
+            className="text-muted-foreground hover:text-destructive shrink-0"
+            variant="ghost"
+            size="sm"
+            onClick={logout}
           >
-            <Button
-              nativeButton={false}
-              variant="outline"
-              render={<Link to="/categories" />}
-            >
-              <TagsIcon data-icon="inline-start" /> Categorias
-            </Button>
-            <Button type="button" variant="outline" onClick={logout}>
-              <LogOutIcon data-icon="inline-start" /> Sair
-            </Button>
-          </nav>
+            <LogOutIcon data-icon="inline-start" /> Sair
+          </Button>
         </header>
 
+        {categoriesQuery.isError ? (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertDescription className="flex flex-col items-start gap-3">
+              Não foi possível carregar as categorias. O filtro por categoria
+              está temporariamente indisponível.
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void categoriesQuery.refetch()}
+              >
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <section
-          className="flex flex-col gap-6"
+          className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8"
           aria-labelledby="tasks-heading"
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 id="tasks-heading" className="text-xl font-semibold">
-                Tarefas
+          <aside className="lg:bg-card flex flex-col gap-4 lg:sticky lg:top-6 lg:col-span-3 lg:self-start lg:rounded-xl lg:border lg:p-4 lg:shadow-sm">
+            <div className="flex items-center justify-between gap-2 lg:px-2">
+              <h2 className="text-muted-foreground text-sm font-semibold lg:text-xs lg:tracking-wider lg:uppercase">
+                Categorias
               </h2>
-              <p className="text-muted-foreground text-sm">
-                Organize prioridades, prazos e andamento em um só lugar.
-              </p>
+              <Link
+                to="/categories"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                Gerenciar
+              </Link>
             </div>
-            <Button type="button" onClick={() => setFormTask(null)}>
-              <PlusIcon data-icon="inline-start" /> Nova tarefa
-            </Button>
-          </div>
-
-          {notice ? (
-            <Alert
-              variant={notice.kind === 'error' ? 'destructive' : 'default'}
-            >
-              {notice.kind === 'error' ? (
-                <AlertCircleIcon />
-              ) : (
-                <CheckCircle2Icon />
-              )}
-              <AlertDescription>{notice.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          {categoriesQuery.isError ? (
-            <Alert variant="destructive">
-              <AlertCircleIcon />
-              <AlertDescription className="flex flex-col items-start gap-3">
-                Não foi possível carregar as categorias. O cadastro e o filtro
-                por categoria estão temporariamente indisponíveis.
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void categoriesQuery.refetch()}
-                >
-                  Tentar novamente
-                </Button>
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          <TaskFilters
-            search={taskFilters.searchInput}
-            status={taskFilters.status}
-            category={taskFilters.category}
-            priority={taskFilters.priority}
-            categories={categories}
-            onSearchChange={taskFilters.setSearchInput}
-            onStatusChange={taskFilters.setStatus}
-            onCategoryChange={taskFilters.setCategory}
-            onPriorityChange={taskFilters.setPriority}
-          />
-
-          <div
-            className={
-              tasksQuery.isFetching
-                ? 'opacity-70 transition-opacity'
-                : undefined
-            }
-          >
-            <TaskList
-              data={tasksQuery.data}
+            <TaskCategoryNav
               categories={categories}
-              isLoading={tasksQuery.isLoading}
-              isError={tasksQuery.isError}
-              changingTaskId={
-                changeStatus.isPending
-                  ? changeStatus.variables?.taskId
-                  : undefined
-              }
-              onRetry={() => void tasksQuery.refetch()}
-              onCreate={() => setFormTask(null)}
-              onEdit={(task) => setFormTask(task)}
-              onToggleStatus={(task) => void toggleStatus(task)}
-              onDelete={setTaskToDelete}
-              onShare={setTaskToShare}
+              selectedCategory={taskFilters.category}
+              total={categoryCounts.total}
+              counts={categoryCounts.counts}
+              isLoading={categoriesQuery.isLoading || categoryCounts.isLoading}
+              onCategoryChange={taskFilters.setCategory}
             />
-          </div>
-
-          {tasksQuery.data && tasksQuery.data.count > 0 ? (
-            <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-              <p className="text-muted-foreground text-sm" aria-live="polite">
-                Mostrando {firstItem}–{lastItem} de {tasksQuery.data.count}{' '}
-                tarefas
-              </p>
-              <Pagination className="mx-0 w-auto">
-                <PaginationContent>
-                  <PaginationItem>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={
-                        !tasksQuery.data.previous || tasksQuery.isFetching
-                      }
-                      onClick={() =>
-                        taskFilters.setPage((page) => Math.max(1, page - 1))
-                      }
-                    >
-                      Anterior
-                    </Button>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!tasksQuery.data.next || tasksQuery.isFetching}
-                      onClick={() => taskFilters.setPage((page) => page + 1)}
-                    >
-                      Próximo
-                    </Button>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+            <div className="hidden flex-col gap-4 lg:flex">
+              <Separator />
+              <div className="flex flex-col gap-3">
+                <h3 className="text-muted-foreground text-xs font-semibold lg:px-2 lg:tracking-wider lg:uppercase">
+                  Filtros avançados
+                </h3>
+                <TaskAdvancedFilters
+                  idPrefix="desktop"
+                  status={taskFilters.status}
+                  priority={taskFilters.priority}
+                  onStatusChange={taskFilters.setStatus}
+                  onPriorityChange={taskFilters.setPriority}
+                />
+              </div>
             </div>
-          ) : null}
+          </aside>
+
+          <div className="flex min-w-0 flex-col gap-4 lg:col-span-9">
+            <h2 id="tasks-heading" className="sr-only">
+              Lista de tarefas
+            </h2>
+            <TaskFilters
+              search={taskFilters.searchInput}
+              status={taskFilters.status}
+              priority={taskFilters.priority}
+              onSearchChange={taskFilters.setSearchInput}
+              onStatusChange={taskFilters.setStatus}
+              onPriorityChange={taskFilters.setPriority}
+              onCreate={openCreateForm}
+            />
+
+            <div
+              className={cn(
+                tasksQuery.isFetching && 'opacity-70 transition-opacity',
+              )}
+            >
+              <TaskList
+                data={tasksQuery.data}
+                categories={categories}
+                isLoading={tasksQuery.isLoading}
+                isError={tasksQuery.isError}
+                changingTaskId={
+                  changeStatus.isPending
+                    ? changeStatus.variables?.taskId
+                    : undefined
+                }
+                onRetry={() => void tasksQuery.refetch()}
+                onCreate={openCreateForm}
+                onEdit={setFormTask}
+                onToggleStatus={(task) => void toggleStatus(task)}
+                onDelete={setTaskToDelete}
+                onShare={setTaskToShare}
+              />
+            </div>
+
+            {tasksQuery.data && tasksQuery.data.count > 0 ? (
+              <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                <p className="text-muted-foreground text-sm" aria-live="polite">
+                  Mostrando {firstItem}–{lastItem} de {tasksQuery.data.count}{' '}
+                  tarefas
+                </p>
+                <Pagination className="mx-0 w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                          !tasksQuery.data.previous || tasksQuery.isFetching
+                        }
+                        onClick={() =>
+                          taskFilters.setPage((page) => Math.max(1, page - 1))
+                        }
+                      >
+                        Anterior
+                      </Button>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={
+                          !tasksQuery.data.next || tasksQuery.isFetching
+                        }
+                        onClick={() => taskFilters.setPage((page) => page + 1)}
+                      >
+                        Próximo
+                      </Button>
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            ) : null}
+          </div>
         </section>
       </div>
+
+      <Button
+        type="button"
+        size="icon"
+        className="fixed right-6 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 size-14 rounded-full shadow-xl lg:hidden"
+        aria-label="Criar nova tarefa"
+        title="Nova tarefa"
+        onClick={openCreateForm}
+      >
+        <PlusIcon />
+      </Button>
 
       <Dialog
         open={isFormOpen}
@@ -281,9 +335,11 @@ export function TasksPage() {
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-            key={formTask?.id ?? 'new'}
+            key={formTask?.id ?? `new-${newTaskCategoryId ?? 'none'}`}
             task={formTask ?? undefined}
+            defaultCategoryId={newTaskCategoryId}
             categories={categories}
+            categoriesLoading={categoriesQuery.isLoading}
             onCancel={() => setFormTask(undefined)}
             onSuccess={finishForm}
           />

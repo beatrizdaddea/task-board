@@ -32,12 +32,14 @@ type TaskListProps = {
   onShare: (task: Task) => void
 }
 
+const TASK_GRID_CLASSES = 'grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'
+
 export function TaskList(props: TaskListProps) {
   if (props.isLoading && !props.data) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
-        {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton key={index} className="h-56 w-full rounded-xl" />
+      <div className={TASK_GRID_CLASSES}>
+        {Array.from({ length: 8 }, (_, index) => (
+          <Skeleton key={index} className="h-40 w-full rounded-xl" />
         ))}
       </div>
     )
@@ -75,7 +77,11 @@ export function TaskList(props: TaskListProps) {
             Ajuste os filtros ou crie uma nova tarefa para começar.
           </EmptyDescription>
         </EmptyHeader>
-        <Button type="button" onClick={props.onCreate}>
+        <Button
+          type="button"
+          className="hidden lg:inline-flex"
+          onClick={props.onCreate}
+        >
           Nova tarefa
         </Button>
       </Empty>
@@ -87,7 +93,7 @@ export function TaskList(props: TaskListProps) {
   )
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className={TASK_GRID_CLASSES}>
       {props.data.results.map((task) => (
         <TaskCard
           key={task.id}
