@@ -1,10 +1,23 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
-import { TaskBoardHome } from '@/app/pages/TaskBoardHome'
+import { DashboardPage } from '@/app/pages/DashboardPage'
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
+import { PublicOnlyRoute } from '@/features/auth/components/PublicOnlyRoute'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
+import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 
 export const router = createBrowserRouter([
-  { path: '/', element: <TaskBoardHome /> },
-  { path: '/login', element: <LoginPage /> },
-  { path: '*', element: <Navigate to="/" replace /> },
+  {
+    element: <PublicOnlyRoute />,
+    children: [
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+    ],
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [{ path: '/dashboard', element: <DashboardPage /> }],
+  },
+  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
 ])
