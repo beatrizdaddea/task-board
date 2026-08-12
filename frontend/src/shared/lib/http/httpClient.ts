@@ -1,4 +1,3 @@
-import { tokenStorage } from '@/shared/lib/auth/tokenStorage'
 import { ApiError } from '@/shared/lib/http/ApiError'
 
 const API_BASE_URL = (
@@ -17,12 +16,21 @@ const STATUS_MESSAGES: Readonly<Record<number, string>> = {
 
 type RequestOptions = RequestInit & {
   authenticated?: boolean
-  retryOnUnauthorized?: boolean
 }
 
-type RefreshResponse = { access: string }
+type HttpAuthConfig = {
+  getAccessToken: () => string | null
+  onUnauthorized: () => void
+}
 
-let refreshRequest: Promise<string | null> | null = null
+let authConfig: HttpAuthConfig = {
+  getAccessToken: () => null,
+  onUnauthorized: () => undefined,
+}
+
+export function configureHttpAuth(config: HttpAuthConfig) {
+  authConfig = config
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -51,51 +59,12 @@ async function parseBody(response: Response): Promise<unknown> {
     : response.text()
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = tokenStorage.getRefreshToken()
-
-  if (!refreshToken) {
-    return null
-  }
-
-  if (!refreshRequest) {
-    refreshRequest = fetch(`${API_BASE_URL}/auth/refresh/`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh: refreshToken }),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          tokenStorage.clear()
-          return null
-        }
-
-        const body = (await response.json()) as RefreshResponse
-        tokenStorage.setTokens(body.access)
-        return body.access
-      })
-      .catch(() => {
-        tokenStorage.clear()
-        return null
-      })
-      .finally(() => {
-        refreshRequest = null
-      })
-  }
-
-  return refreshRequest
-}
-
 async function request<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
   const {
     authenticated = true,
-    retryOnUnauthorized = true,
     headers: requestHeaders,
     ...requestInit
   } = options
@@ -106,7 +75,7 @@ async function request<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const accessToken = tokenStorage.getAccessToken()
+  const accessToken = authConfig.getAccessToken()
   if (authenticated && accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`)
   }
@@ -126,17 +95,13 @@ async function request<T>(
     )
   }
 
-  if (response.status === 401 && authenticated && retryOnUnauthorized) {
-    const refreshedToken = await refreshAccessToken()
-
-    if (refreshedToken) {
-      return request<T>(path, { ...options, retryOnUnauthorized: false })
-    }
-  }
-
   const body = await parseBody(response)
 
   if (!response.ok) {
+    if (response.status === 401 && authenticated) {
+      authConfig.onUnauthorized()
+    }
+
     throw new ApiError(
       getErrorMessage(response.status, body),
       response.status,
