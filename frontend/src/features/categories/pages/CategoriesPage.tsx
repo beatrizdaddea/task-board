@@ -1,10 +1,4 @@
-import {
-  AlertCircleIcon,
-  CheckCircle2Icon,
-  ClipboardListIcon,
-  LogOutIcon,
-  PlusIcon,
-} from 'lucide-react'
+import { ClipboardListIcon, LogOutIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -15,7 +9,6 @@ import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useCategoryMutations } from '@/features/categories/hooks/useCategoryMutations'
 import type { Category } from '@/features/categories/types/categoryTypes'
 import { useAuth } from '@/features/auth/hooks/useAuth'
-import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog'
-import { Button } from '@/shared/components/ui/button'
+import { Button, buttonVariants } from '@/shared/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -35,8 +28,13 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Spinner } from '@/shared/components/ui/spinner'
+import { useToast } from '@/shared/hooks/useToast'
+import { cn } from '@/shared/lib/utils'
+
+const TOAST_DURATION = 10_000
 
 export function CategoriesPage() {
+  const { add: showToast } = useToast()
   const { logout } = useAuth()
   const categoriesQuery = useCategories()
   const { deleteCategory } = useCategoryMutations()
@@ -46,58 +44,101 @@ export function CategoriesPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null,
   )
-  const [notice, setNotice] = useState<{
-    kind: 'success' | 'error'
-    message: string
-  } | null>(null)
-
   const confirmDelete = async () => {
     if (!categoryToDelete) return
 
     try {
       await deleteCategory.mutateAsync(categoryToDelete.id)
       setCategoryToDelete(null)
-      setNotice({
-        kind: 'success',
-        message: 'Categoria excluída com sucesso.',
+      showToast({
+        type: 'error',
+        title: 'Categoria removida',
+        description: 'Categoria removida com sucesso!',
+        timeout: TOAST_DURATION,
       })
     } catch (error: unknown) {
       setCategoryToDelete(null)
-      setNotice({
-        kind: 'error',
-        message: getCategoryDeleteErrorMessage(error),
+      showToast({
+        type: 'error',
+        title: 'Não foi possível remover a categoria',
+        description: getCategoryDeleteErrorMessage(error),
+        timeout: TOAST_DURATION,
       })
     }
   }
 
-  const finishForm = (message: string) => {
+  const finishForm = (action: 'created' | 'updated') => {
     setFormCategory(undefined)
-    setNotice({ kind: 'success', message })
+    showToast({
+      type: action === 'created' ? 'success' : 'info',
+      title: action === 'created' ? 'Categoria criada' : 'Categoria atualizada',
+      description:
+        action === 'created'
+          ? 'Categoria criada com sucesso!'
+          : 'Categoria atualizada com sucesso!',
+      timeout: TOAST_DURATION,
+    })
   }
 
   return (
-    <main className="min-h-svh px-4 py-6 sm:px-6">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-muted-foreground text-sm">TaskBoard</p>
-            <h1 className="text-2xl font-semibold tracking-tight">
+    <main className="min-h-svh px-4 pt-4 pb-24 sm:px-6 md:py-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+        <header className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-xs font-medium md:text-sm">
+              TaskBoard
+            </p>
+            <h1
+              id="categories-heading"
+              className="text-xl font-semibold tracking-tight whitespace-nowrap md:text-2xl"
+            >
               Minhas categorias
             </h1>
           </div>
           <nav
-            className="flex flex-wrap items-center gap-2"
+            className="flex shrink-0 items-center gap-1 md:gap-2"
             aria-label="Navegação principal"
           >
-            <Button
-              nativeButton={false}
-              variant="outline"
-              render={<Link to="/dashboard" />}
+            <Link
+              to="/dashboard"
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'icon' }),
+                'md:hidden',
+              )}
+              aria-label="Abrir tarefas"
+              title="Tarefas"
             >
-              <ClipboardListIcon data-icon="inline-start" /> Tarefas
+              <ClipboardListIcon />
+            </Link>
+            <Link
+              to="/dashboard"
+              className={cn(
+                buttonVariants({ variant: 'outline' }),
+                'hidden md:inline-flex',
+              )}
+            >
+              <ClipboardListIcon data-icon="inline-start" />
+              Tarefas
+            </Link>
+            <Button
+              type="button"
+              className="text-destructive md:hidden"
+              variant="ghost"
+              size="icon"
+              aria-label="Sair da conta"
+              title="Sair"
+              onClick={logout}
+            >
+              <LogOutIcon />
             </Button>
-            <Button type="button" variant="outline" onClick={logout}>
-              <LogOutIcon data-icon="inline-start" /> Sair
+            <Button
+              type="button"
+              className="text-destructive hidden md:inline-flex"
+              variant="ghost"
+              onClick={logout}
+            >
+              <LogOutIcon data-icon="inline-start" />
+              Sair
             </Button>
           </nav>
         </header>
@@ -106,32 +147,18 @@ export function CategoriesPage() {
           className="flex flex-col gap-6"
           aria-labelledby="categories-heading"
         >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 id="categories-heading" className="text-xl font-semibold">
-                Categorias
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Organize as tarefas em grupos fáceis de encontrar.
-              </p>
-            </div>
-            <Button type="button" onClick={() => setFormCategory(null)}>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-muted-foreground text-sm">
+              Organize as tarefas em grupos fáceis de encontrar.
+            </p>
+            <Button
+              type="button"
+              className="hidden shrink-0 md:inline-flex"
+              onClick={() => setFormCategory(null)}
+            >
               <PlusIcon data-icon="inline-start" /> Nova categoria
             </Button>
           </div>
-
-          {notice ? (
-            <Alert
-              variant={notice.kind === 'error' ? 'destructive' : 'default'}
-            >
-              {notice.kind === 'error' ? (
-                <AlertCircleIcon />
-              ) : (
-                <CheckCircle2Icon />
-              )}
-              <AlertDescription>{notice.message}</AlertDescription>
-            </Alert>
-          ) : null}
 
           <CategoryList
             categories={categoriesQuery.data}
@@ -144,6 +171,17 @@ export function CategoriesPage() {
           />
         </section>
       </div>
+
+      <Button
+        type="button"
+        size="icon"
+        className="fixed right-6 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 size-14 rounded-full shadow-xl md:hidden"
+        aria-label="Criar nova categoria"
+        title="Nova categoria"
+        onClick={() => setFormCategory(null)}
+      >
+        <PlusIcon />
+      </Button>
 
       <Dialog
         open={formCategory !== undefined}

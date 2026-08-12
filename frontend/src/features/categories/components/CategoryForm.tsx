@@ -24,7 +24,7 @@ import { ApiError } from '@/shared/lib/http/ApiError'
 type CategoryFormProps = {
   category?: Category
   onCancel: () => void
-  onSuccess: (message: string) => void
+  onSuccess: (action: 'created' | 'updated') => void
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -57,11 +57,7 @@ export function CategoryForm({
       } else {
         await createCategory.mutateAsync(values)
       }
-      onSuccess(
-        category
-          ? 'Categoria atualizada com sucesso.'
-          : 'Categoria criada com sucesso.',
-      )
+      onSuccess(category ? 'updated' : 'created')
     } catch (error: unknown) {
       if (error instanceof ApiError && isRecord(error.details)) {
         const detail = error.details.name

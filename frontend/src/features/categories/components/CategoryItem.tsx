@@ -22,11 +22,16 @@ export function CategoryItem({
   onDelete,
 }: CategoryItemProps) {
   return (
-    <Card size="sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <Card
+      size="sm"
+      className="h-full transition-shadow focus-within:shadow-md hover:shadow-md"
+    >
+      <CardHeader className="min-w-0">
+        <CardTitle className="flex min-w-0 items-center gap-2">
           <TagIcon />
-          <span className="truncate">{category.name}</span>
+          <span className="truncate" title={category.name}>
+            {category.name}
+          </span>
         </CardTitle>
         <CardDescription>
           Criada em{' '}
@@ -34,21 +39,23 @@ export function CategoryItem({
             new Date(category.created_at),
           )}
         </CardDescription>
-        <CardAction className="flex items-center gap-1">
+        <CardAction className="flex items-center gap-2">
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             aria-label={`Editar categoria ${category.name}`}
+            title="Editar categoria"
             onClick={() => onEdit(category)}
           >
             <PencilIcon />
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="destructive"
             size="icon-sm"
             aria-label={`Excluir categoria ${category.name}`}
+            title="Excluir categoria"
             onClick={() => onDelete(category)}
           >
             <Trash2Icon />

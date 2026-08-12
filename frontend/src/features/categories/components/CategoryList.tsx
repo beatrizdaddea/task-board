@@ -30,8 +30,8 @@ type CategoryListProps = {
 export function CategoryList(props: CategoryListProps) {
   if (props.isLoading) {
     return (
-      <div className="grid gap-3 md:grid-cols-2">
-        {Array.from({ length: 4 }, (_, index) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
           <Skeleton key={index} className="h-24 w-full rounded-xl" />
         ))}
       </div>
@@ -70,7 +70,11 @@ export function CategoryList(props: CategoryListProps) {
             Crie uma categoria para organizar suas tarefas.
           </EmptyDescription>
         </EmptyHeader>
-        <Button type="button" onClick={props.onCreate}>
+        <Button
+          type="button"
+          className="hidden md:inline-flex"
+          onClick={props.onCreate}
+        >
           Nova categoria
         </Button>
       </Empty>
@@ -78,7 +82,7 @@ export function CategoryList(props: CategoryListProps) {
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {props.categories.map((category) => (
         <CategoryItem
           key={category.id}
