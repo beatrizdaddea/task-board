@@ -20,13 +20,27 @@ compartilhamentos está documentado em `docs/api/task-sharing.md`.
   "priority": "high",
   "due_date": "2026-08-20",
   "category": 2,
+  "category_name": "Trabalho",
+  "is_shared": false,
+  "permissions": {
+    "can_edit": true,
+    "can_edit_category": true,
+    "can_delete": true,
+    "can_change_status": true
+  },
   "created_at": "2026-08-11T14:30:00-03:00",
   "updated_at": "2026-08-11T14:30:00-03:00"
 }
 ```
 
-`id`, `created_at` e `updated_at` são somente de leitura. `owner` não integra o
-payload nem a resposta e é sempre obtido do token autenticado.
+`id`, `category_name`, `is_shared`, `permissions`, `created_at` e `updated_at`
+são somente de leitura. `owner` não integra o payload nem a resposta e é sempre
+obtido do token autenticado. As capacidades em `permissions` refletem a
+propriedade ou o nível do compartilhamento para que clientes ocultem ações não
+autorizadas sem tentar inferi-las.
+
+`is_shared` indica que a tarefa possui ao menos um compartilhamento ativo, tanto
+na visualização do owner quanto na de um usuário convidado.
 
 - `title`: obrigatório, com no máximo 200 caracteres;
 - `description`: opcional; quando omitida, usa uma string vazia;

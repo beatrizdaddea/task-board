@@ -8,6 +8,9 @@ User = get_user_model()
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    category_name = serializers.SerializerMethodField()
+    is_shared = serializers.SerializerMethodField()
+    permissions = serializers.SerializerMethodField()
     category = serializers.PrimaryKeyRelatedField(
         allow_null=True,
         queryset=Category.objects.none(),
@@ -24,10 +27,36 @@ class TaskSerializer(serializers.ModelSerializer):
             "priority",
             "due_date",
             "category",
+            "category_name",
+            "is_shared",
+            "permissions",
             "created_at",
             "updated_at",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def get_is_shared(self, task):
+        if hasattr(task, "has_shares"):
+            return task.has_shares
+        return task.shares.exists()
+
+    def get_category_name(self, task):
+        return task.category.name if task.category else None
+
+    def get_permissions(self, task):
+        user = self.context["request"].user
+        is_owner = task.owner_id == user.pk
+        shares = getattr(task, "current_user_shares", ())
+        can_edit = is_owner or any(
+            share.permission == TaskShare.Permission.EDIT for share in shares
+        )
+
+        return {
+            "can_edit": can_edit,
+            "can_edit_category": is_owner,
+            "can_delete": is_owner,
+            "can_change_status": can_edit,
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

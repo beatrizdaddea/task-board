@@ -189,6 +189,13 @@ def test_read_user_can_list_and_retrieve_shared_task(
     assert [item["id"] for item in list_response.json()["results"]] == [task.pk]
     assert detail_response.status_code == status.HTTP_200_OK
     assert detail_response.json()["id"] == task.pk
+    assert detail_response.json()["is_shared"] is True
+    assert detail_response.json()["permissions"] == {
+        "can_edit": False,
+        "can_edit_category": False,
+        "can_delete": False,
+        "can_change_status": False,
+    }
 
 
 @pytest.mark.parametrize(
@@ -255,6 +262,12 @@ def test_edit_user_can_retrieve_and_edit_shared_task(
     )
 
     assert detail_response.status_code == status.HTTP_200_OK
+    assert detail_response.json()["permissions"] == {
+        "can_edit": True,
+        "can_edit_category": False,
+        "can_delete": False,
+        "can_change_status": True,
+    }
     assert update_response.status_code == status.HTTP_200_OK
     task.refresh_from_db()
     assert task.title == "Entrega revisada"

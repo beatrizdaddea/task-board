@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.response import Response
@@ -30,9 +30,23 @@ class TaskViewSet(viewsets.ModelViewSet):
     pagination_class = TaskPagination
 
     def get_queryset(self):
-        return Task.objects.filter(
-            Q(owner=self.request.user) | Q(shares__user=self.request.user)
-        ).distinct()
+        return (
+            Task.objects.filter(
+                Q(owner=self.request.user) | Q(shares__user=self.request.user)
+            )
+            .annotate(
+                has_shares=Exists(TaskShare.objects.filter(task_id=OuterRef("pk")))
+            )
+            .select_related("category")
+            .prefetch_related(
+                Prefetch(
+                    "shares",
+                    queryset=TaskShare.objects.filter(user=self.request.user),
+                    to_attr="current_user_shares",
+                )
+            )
+            .distinct()
+        )
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
