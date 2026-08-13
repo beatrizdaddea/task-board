@@ -1,5 +1,6 @@
 from django.db.models import Exists, OuterRef, Prefetch, Q
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.response import Response
 
@@ -16,6 +17,7 @@ from apps.tasks.services import remove_share, share_task, update_share_permissio
 
 
 class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.none()
     serializer_class = TaskSerializer
     permission_classes = (permissions.IsAuthenticated, TaskAccessPermission)
     http_method_names = ("get", "post", "patch", "delete", "head", "options")
@@ -69,6 +71,10 @@ class TaskShareViewSet(
             return TaskShareCreateSerializer
         return TaskShareSerializer
 
+    @extend_schema(
+        request=TaskShareCreateSerializer,
+        responses={status.HTTP_201_CREATED: TaskShareSerializer},
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

@@ -35,15 +35,15 @@ class TaskSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at", "updated_at")
 
-    def get_is_shared(self, task):
+    def get_is_shared(self, task: Task) -> bool:
         if hasattr(task, "has_shares"):
             return task.has_shares
         return task.shares.exists()
 
-    def get_category_name(self, task):
+    def get_category_name(self, task: Task) -> str | None:
         return task.category.name if task.category else None
 
-    def get_permissions(self, task):
+    def get_permissions(self, task: Task) -> dict[str, bool]:
         user = self.context["request"].user
         is_owner = task.owner_id == user.pk
         shares = getattr(task, "current_user_shares", ())
@@ -65,11 +65,13 @@ class TaskSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
 
         if request is not None and request.user.is_authenticated:
-            category_owner = (
-                self.instance.owner if isinstance(self.instance, Task) else request.user
+            category_owner_id = (
+                self.instance.owner_id
+                if isinstance(self.instance, Task)
+                else request.user.pk
             )
             self.fields["category"].queryset = Category.objects.filter(
-                owner=category_owner
+                owner_id=category_owner_id
             )
 
     def validate(self, attrs):

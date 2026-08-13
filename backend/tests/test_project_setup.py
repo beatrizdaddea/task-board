@@ -19,6 +19,7 @@ def test_cors_preflight_allows_configured_frontend_origin(client) -> None:
 
     assert response.status_code == 200
     assert response["Access-Control-Allow-Origin"] == "http://localhost:5173"
+    assert response["Access-Control-Allow-Credentials"] == "true"
     assert "POST" in response["Access-Control-Allow-Methods"]
     assert "content-type" in response["Access-Control-Allow-Headers"]
 

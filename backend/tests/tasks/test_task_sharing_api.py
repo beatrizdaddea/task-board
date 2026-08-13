@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.categories.models import Category
+from apps.notifications.models import Notification
 from apps.tasks.models import Task, TaskShare
 
 pytestmark = pytest.mark.django_db
@@ -80,6 +81,28 @@ def test_owner_shares_task_by_email(
     assert "user" not in response.json()
 
 
+def test_new_share_notifies_the_recipient(
+    authenticated_client: APIClient, task: Task, owner, other_user
+) -> None:
+    response = authenticated_client.post(
+        share_collection_url(task),
+        {
+            "user_email": other_user.email,
+            "permission": TaskShare.Permission.READ,
+        },
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    notification = Notification.objects.get()
+    assert notification.recipient == other_user
+    assert notification.recipient != owner
+    assert notification.task == task
+    assert notification.type == Notification.Type.TASK_SHARED
+    assert task.title in notification.message
+    assert notification.read_at is None
+
+
 def test_owner_lists_task_shares(
     authenticated_client: APIClient, task: Task, other_user, third_user
 ) -> None:
@@ -113,6 +136,19 @@ def test_owner_updates_share_permission(
     assert response.status_code == status.HTTP_200_OK
     share.refresh_from_db()
     assert share.permission == TaskShare.Permission.EDIT
+
+
+def test_rejects_share_update_without_permission(
+    authenticated_client: APIClient, task: Task, other_user
+) -> None:
+    share = create_share(task=task, user=other_user)
+
+    response = authenticated_client.patch(share_detail_url(share), {}, format="json")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert set(response.json()) == {"permission"}
+    share.refresh_from_db()
+    assert share.permission == TaskShare.Permission.READ
 
 
 def test_owner_removes_share(
@@ -174,6 +210,59 @@ def test_rejects_duplicate_share(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "user_email" in response.json()
     assert TaskShare.objects.count() == 1
+
+
+def test_repeated_share_does_not_create_duplicate_notification(
+    authenticated_client: APIClient, task: Task, other_user
+) -> None:
+    payload = {
+        "user_email": other_user.email,
+        "permission": TaskShare.Permission.READ,
+    }
+    first_response = authenticated_client.post(
+        share_collection_url(task), payload, format="json"
+    )
+    repeated_response = authenticated_client.post(
+        share_collection_url(task), payload, format="json"
+    )
+
+    assert first_response.status_code == status.HTTP_201_CREATED
+    assert repeated_response.status_code == status.HTTP_400_BAD_REQUEST
+    assert (
+        Notification.objects.filter(
+            recipient=other_user,
+            task=task,
+            type=Notification.Type.TASK_SHARED,
+        ).count()
+        == 1
+    )
+
+
+def test_task_update_does_not_create_another_share_notification(
+    authenticated_client: APIClient, task: Task, other_user
+) -> None:
+    authenticated_client.post(
+        share_collection_url(task),
+        {
+            "user_email": other_user.email,
+            "permission": TaskShare.Permission.EDIT,
+        },
+        format="json",
+    )
+
+    response = authenticated_client.patch(
+        task_detail_url(task), {"title": "Entrega atualizada"}, format="json"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert (
+        Notification.objects.filter(
+            recipient=other_user,
+            task=task,
+            type=Notification.Type.TASK_SHARED,
+        ).count()
+        == 1
+    )
 
 
 def test_read_user_can_list_and_retrieve_shared_task(
@@ -345,6 +434,22 @@ def test_edit_user_cannot_change_task_category(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     task.refresh_from_db()
     assert task.category.owner != other_user
+
+
+def test_edit_user_cannot_resubmit_owner_category(
+    api_client: APIClient, task: Task, other_user
+) -> None:
+    create_share(task=task, user=other_user, permission=TaskShare.Permission.EDIT)
+    authenticate(api_client, other_user)
+
+    response = api_client.patch(
+        task_detail_url(task),
+        {"category": task.category_id},
+        format="json",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert set(response.json()) == {"category"}
 
 
 def test_third_user_cannot_access_task(

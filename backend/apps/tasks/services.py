@@ -1,10 +1,12 @@
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import ValidationError
 
+from apps.notifications.services import notify_task_shared
 from apps.tasks.models import Task, TaskShare
 
 
-def share_task(*, task: Task, user, permission: str) -> TaskShare:
+def share_task(*, task: Task, user: AbstractBaseUser, permission: str) -> TaskShare:
     if task.owner_id == user.pk:
         raise ValidationError(
             {"user_email": "Uma tarefa não pode ser compartilhada com o owner."}
@@ -17,11 +19,13 @@ def share_task(*, task: Task, user, permission: str) -> TaskShare:
 
     try:
         with transaction.atomic():
-            return TaskShare.objects.create(
+            share = TaskShare.objects.create(
                 task=task,
                 user=user,
                 permission=permission,
             )
+            notify_task_shared(task=task, recipient=user)
+            return share
     except IntegrityError as error:
         raise ValidationError(
             {"user_email": "A tarefa já foi compartilhada com este usuário."}

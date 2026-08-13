@@ -5,6 +5,7 @@ from apps.categories.serializers import CategorySerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.none()
     serializer_class = CategorySerializer
     permission_classes = (permissions.IsAuthenticated,)
     http_method_names = ("get", "post", "patch", "delete", "head", "options")
