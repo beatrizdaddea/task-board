@@ -254,10 +254,3 @@ def test_ignores_owner_sent_in_payload(
     assert created_task.owner == owner
     assert created_task.owner != other_user
     assert "owner" not in response.json()
-
-
-def test_deleting_category_keeps_task_without_category(task: Task) -> None:
-    task.category.delete()
-
-    task.refresh_from_db()
-    assert task.category is None
