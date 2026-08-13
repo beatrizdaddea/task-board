@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoriesService } from '@/features/categories/api/categoriesService'
 import { categoryKeys } from '@/features/categories/hooks/useCategories'
 import type { CategoryInput } from '@/features/categories/schemas/categorySchemas'
+import { taskKeys } from '@/features/tasks/hooks/useTasks'
 
 export function useCategoryMutations() {
   const queryClient = useQueryClient()
@@ -13,7 +14,7 @@ export function useCategoryMutations() {
   const refreshCategoriesAndTasks = async () => {
     await Promise.all([
       refreshCategories(),
-      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      queryClient.invalidateQueries({ queryKey: taskKeys.all }),
     ])
   }
 

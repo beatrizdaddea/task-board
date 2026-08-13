@@ -6,6 +6,7 @@ import type {
   CreateSharePayload,
   SharePermission,
 } from '@/features/sharing/types/shareTypes'
+import { taskKeys } from '@/features/tasks/hooks/useTasks'
 
 export function useShareMutations(taskId: number) {
   const queryClient = useQueryClient()
@@ -13,7 +14,7 @@ export function useShareMutations(taskId: number) {
   const refreshSharing = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: shareKeys.list(taskId) }),
-      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      queryClient.invalidateQueries({ queryKey: taskKeys.all }),
     ])
   }
 
