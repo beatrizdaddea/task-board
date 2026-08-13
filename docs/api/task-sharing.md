@@ -1,7 +1,7 @@
 # API de compartilhamento de tarefas
 
 O compartilhamento concede acesso explícito a uma tarefa sem transferir sua
-propriedade. Todas as rotas exigem `Authorization: Bearer <access_token>`. O
+propriedade. Todas as rotas exigem um access JWT válido por cookie ou Bearer. O
 owner administra os acessos; usuários com `read` ou `edit` podem apenas listar
 os compartilhamentos da tarefa que já conseguem acessar.
 
@@ -76,6 +76,10 @@ pertencer a ele.
   - `404 Not Found`: tarefa inexistente ou que não pertence ao usuário.
 
 Os valores aceitos para `permission` são `read` e `edit`.
+
+Um compartilhamento criado também gera uma notificação interna `TASK_SHARED`
+para o destinatário. Atualizar a tarefa ou repetir uma operação que não cria um
+novo `TaskShare` não gera uma notificação adicional.
 
 ## Alterar permissão
 

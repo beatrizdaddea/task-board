@@ -1,6 +1,7 @@
 # API de tarefas
 
-Todas as rotas exigem o header `Authorization: Bearer <access_token>`. A
+Todas as rotas exigem um access JWT válido no cookie `taskboard_access` ou no
+header `Authorization: Bearer <access_token>`. A
 listagem inclui tarefas próprias e tarefas compartilhadas com o usuário. Um ID
 sem relação de propriedade ou compartilhamento retorna `404 Not Found`.
 

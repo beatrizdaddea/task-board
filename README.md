@@ -1,285 +1,215 @@
 # TaskBoard
 
-Aplicação full stack de gerenciamento de tarefas. O backend expõe uma API REST
-privada por usuário e o frontend usa uma arquitetura Feature-Based para manter
-as regras de cada domínio próximas de suas telas, hooks e serviços.
+> Aplicação full stack para organizar e compartilhar tarefas, com autorização por usuário, autenticação JWT em cookies HttpOnly e notificações internas.
 
-## Stack
+![Python 3.13](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
+![Django 5.2](https://img.shields.io/badge/Django-5.2-092E20?logo=django&logoColor=white)
+![Django REST Framework 3.16](https://img.shields.io/badge/DRF-3.16-A30000?logo=django&logoColor=white)
+![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript 5.8](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![CI](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml/badge.svg)
 
-- Backend: Python, Django e Django REST Framework
-- Frontend: React 19, TypeScript, Vite e React Router
-- UI: shadcn/ui (preset Nova/Base UI) e Tailwind CSS 4
-- Dados remotos: TanStack Query
-- Formulários: React Hook Form, Zod e `@hookform/resolvers`
-- Banco de dados: PostgreSQL
-- Infraestrutura local: Docker e Docker Compose
-- Qualidade: Ruff, Black, pytest, pytest-django, ESLint e Prettier
+**Status:** funcional. Cadastro, autenticação, categorias, tarefas, compartilhamento e notificações internas estão implementados.
 
-## Arquitetura frontend
+## Sumário
 
-O frontend é organizado por responsabilidade global e por feature:
+- [Sobre o projeto](#sobre-o-projeto)
+- [Funcionalidades](#funcionalidades)
+- [Tecnologias](#tecnologias)
+- [Arquitetura](#arquitetura)
+- [Como executar localmente](#como-executar-localmente)
+- [Notificações de vencimento](#notificações-de-vencimento)
+- [Testes](#testes)
+- [API](#api)
+- [Security Considerations](#security-considerations)
+- [Decisões de design](#decisões-de-design)
+- [Documentação](#documentação)
+- [Autoria e contato](#autoria-e-contato)
+
+## Sobre o projeto
+
+O TaskBoard permite cadastrar uma conta e administrar tarefas privadas com prioridade, prazo e categoria. Tarefas podem ser concluídas, reabertas, pesquisadas, filtradas e compartilhadas com permissões de leitura ou edição.
+
+Notificações internas informam novos compartilhamentos e vencimentos. A aplicação foi construída como teste técnico para uma vaga de Desenvolvedor(a) Python I e prioriza as convenções do Django/DRF e uma arquitetura proporcional ao escopo.
+
+### Limites atuais
+
+Não há recuperação de senha, login por e-mail, anexos, notificações por e-mail ou processamento automático em background. O comando de vencimentos deve ser executado manualmente ou por um agendador externo. O app `integrations` existe, mas não possui serviço externo ativo.
+
+## Funcionalidades
+
+- [x] Cadastro de usuário com e-mail único e validação de senha.
+- [x] Login, refresh, logout e restauração da sessão com JWT em cookies HttpOnly.
+- [x] Proteção CSRF para autenticação por cookie e CORS com origens explícitas.
+- [x] CRUD privado de categorias e tarefas.
+- [x] Busca, filtros, ordenação e paginação de tarefas.
+- [x] Conclusão, reabertura e compartilhamento com permissões `read` e `edit`.
+- [x] Isolamento por ownership e autorização de recursos compartilhados.
+- [x] Exclusão em cascata das tarefas de uma categoria removida.
+- [x] Notificações de compartilhamento, próximo vencimento e atraso.
+- [x] Lista de notificações e ações para marcar uma ou todas como lidas.
+- [x] OpenAPI, Swagger UI e ReDoc.
+- [x] Testes backend com pytest e fluxos críticos E2E com Selenium.
+
+## Tecnologias
+
+| Tecnologia                                       | Uso atual                                 |
+| ------------------------------------------------ | ----------------------------------------- |
+| Python 3.13 e Django 5.2                         | Backend, models, ORM e migrations.        |
+| Django REST Framework 3.16                       | API, serializers, ViewSets e permissions. |
+| SimpleJWT 5.5                                    | Emissão, validação e blacklist de JWTs.   |
+| drf-spectacular 0.30                             | OpenAPI 3, Swagger UI e ReDoc.            |
+| PostgreSQL 17                                    | Banco principal no Docker Compose.        |
+| React 19, TypeScript 5.8 e Vite 7                | Interface, tipagem e build.               |
+| TanStack Query 5                                 | Estado remoto e invalidação de cache.     |
+| Tailwind CSS 4 e componentes shadcn/ui           | Estilos e interface.                      |
+| pytest, Selenium, Ruff, Black, ESLint e Prettier | Testes e qualidade.                       |
+
+## Arquitetura
+
+O backend é um monólito modular em apps Django. O frontend é organizado por features:
 
 ```text
-frontend/src/
-├── app/
-│   ├── providers/              # Providers globais, como TanStack Query
-│   ├── router/                 # Rotas e composição das páginas
-│   └── App.tsx
-├── features/
-│   ├── auth/                   # Sessão, login e cadastro
-│   ├── tasks/                  # Listagem, filtros e CRUD de tarefas
-│   └── categories/             # Listagem e CRUD de categorias
-├── shared/
-│   ├── components/             # shadcn/ui e reexportações padronizadas
-│   ├── lib/                    # Client HTTP, tokens, QueryClient e helpers
-│   └── types/                  # Tipos reutilizáveis entre features
-└── main.tsx
+TaskBoard/
+├── backend/
+│   ├── config/                 # settings e URLs globais
+│   ├── apps/
+│   │   ├── accounts/           # usuário e autenticação
+│   │   ├── categories/         # categorias privadas
+│   │   ├── tasks/              # tarefas e compartilhamentos
+│   │   ├── notifications/      # notificações e vencimentos
+│   │   └── integrations/       # fronteira sem integração ativa
+│   └── tests/
+├── frontend/
+│   ├── src/features/           # auth, tasks, categories, sharing, notifications
+│   ├── src/shared/             # UI e infraestrutura HTTP
+│   └── e2e/                    # Selenium Page Objects e specs
+└── docs/
 ```
 
-As fronteiras `auth`, `tasks`, `categories` e `sharing` possuem implementação
-funcional e mantêm serviços, hooks, componentes e contratos próximos de cada
-domínio.
+```text
+React / TanStack Query
+  -> fetch central com cookies e CSRF
+  -> Django REST Framework
+  -> ViewSet + permission + serializer
+  -> service quando há regra entre domínios
+  -> Django ORM
+  -> PostgreSQL
+```
 
-### Decisões técnicas
+O wrapper HTTP envia `credentials: "include"`. Ao receber `401`, uma única tentativa compartilhada de refresh é feita; requisições simultâneas aguardam a mesma Promise. O backend continua sendo a autoridade de autorização, mesmo quando a interface oculta ações indisponíveis.
 
-- `app/` contém apenas composição global. Regras de negócio permanecem nas
-  features.
-- O shadcn/ui é mantido como código-fonte em `shared/components/ui`; o arquivo
-  `shared/components/index.ts` oferece a API padronizada para consumo interno.
-- O tema usa tokens semânticos no `src/index.css`. No Tailwind CSS 4, a extensão
-  do tema é feita com `@theme inline`, portanto não há `tailwind.config.js` vazio
-  apenas por convenção de versões anteriores.
-- O TanStack Query gerencia estado remoto. Estado transitório de formulário fica
-  no React Hook Form e não há Redux.
-- Serviços por feature usam o wrapper central baseado em `fetch`; componentes
-  não fazem requisições diretamente.
-- O client adiciona headers comuns e o JWT às requisições autenticadas. Uma
-  resposta `401` encerra a sessão e faz os guards redirecionarem para o login.
-- Somente o access token fica em `localStorage`. O frontend valida a estrutura e
-  o campo `exp` do JWT na inicialização e agenda o logout para sua expiração. O
-  refresh token retornado pelo backend não é persistido nesta implementação.
-- `localStorage` mantém a sessão entre abas e reinicializações do navegador, mas
-  é acessível a JavaScript. Uma evolução para cookies `HttpOnly` exige suporte
-  coordenado no backend e revisão da proteção contra CSRF.
-- TypeScript opera em modo estrito e validações de formulário usam schemas Zod
-  próximos da feature.
+Mais detalhes em [Arquitetura do TaskBoard](docs/architecture/README.md).
 
-## Executar localmente
+## Como executar localmente
 
-Pré-requisitos: Node.js 20+, npm, Python 3.13+ e PostgreSQL, ou Docker com o
-plugin Docker Compose.
+### Pré-requisitos
 
-### Com Docker Compose
+- Git;
+- Docker com Docker Compose;
+- ou Python 3.13+, Node.js 22+, npm e PostgreSQL 17 para execução manual;
+- Chrome para os testes E2E.
+
+### Docker Compose
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-Serviços disponíveis:
+No PowerShell:
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- PostgreSQL: acessível internamente pelo serviço `db`
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
 
-O backend aceita requisições do frontend somente para as origens listadas em
-`CORS_ALLOWED_ORIGINS`. No ambiente local, o valor padrão do Compose é
-`http://localhost:5173`. Após alterar dependências ou essa variável, recrie o
-serviço com `docker compose up --build`.
+Serviços locais:
 
-Para encerrar, execute `docker compose down`.
+- frontend: `http://localhost:5173`;
+- backend: `http://localhost:8000`;
+- Swagger UI: `http://localhost:8000/api/docs/`;
+- ReDoc: `http://localhost:8000/api/redoc/`.
 
-### Frontend sem Docker
+### Execução manual
+
+```bash
+python -m venv .venv
+pip install -r backend/requirements.txt
+python backend/manage.py migrate
+python backend/manage.py runserver
+```
+
+Em outro terminal:
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Copie as variáveis necessárias de `.env.example`. `VITE_API_BASE_URL` deve
-apontar para a raiz versionada da API, por padrão
-`http://localhost:8000/api/v1`.
+`VITE_API_BASE_URL` deve apontar para `http://localhost:8000/api/v1`. Use o mesmo hostname (`localhost` ou `127.0.0.1`) no frontend, no backend e nas origens confiáveis para evitar incompatibilidades de cookie e CSRF.
 
-Scripts disponíveis:
+## Notificações de vencimento
+
+O campo real de prazo é `Task.due_date` (`DateField`). Uma tarefa aberta recebe:
+
+- `TASK_DUE_SOON` quando vence na data local atual ou até a data local alcançada nas próximas 24 horas;
+- `TASK_OVERDUE` quando a data já passou.
+
+O owner da tarefa é o destinatário. Tarefas concluídas são ignoradas e uma constraint evita duplicar o mesmo tipo de notificação para a mesma tarefa e destinatário.
+
+Execute a rotina idempotente com:
 
 ```bash
-npm run dev
+python backend/manage.py process_due_notifications
+```
+
+Em produção, esse comando pode ser chamado periodicamente pelo agendador da plataforma. O projeto não inclui Celery, Redis ou um scheduler embutido.
+
+## Testes
+
+### Backend
+
+```bash
+cd backend
+pytest
+python manage.py check
+python manage.py spectacular --file schema.yml --validate --fail-on-warn
+ruff check .
+black --check .
+```
+
+`schema.yml` é um artefato local ignorado pelo Git.
+
+### Frontend
+
+```bash
+cd frontend
+npm test
 npm run lint
 npm run typecheck
 npm run build
-npm run format
-npm run format:check
-npm run preview
 ```
 
-## Componentes shadcn/ui
+### E2E com Selenium
 
-Os primitivos iniciais são `Button`, `Input`, `Textarea`, `Select`, `Dialog`,
-`AlertDialog`, `Badge`, `Spinner`, `Skeleton`, `Empty`, `Pagination`, `Card`,
-`Field` e `Alert`, além das dependências internas `Label` e `Separator`. Novos
-componentes devem ser adicionados com a CLI oficial e mantidos dentro de
-`shared/components/ui`.
-
-## API e autenticação
-
-Fluxos disponíveis no frontend:
-
-- `/register`: envia `username`, `email` e `password` para
-  `POST /api/v1/auth/register/`. Erros de validação do DRF são apresentados no
-  campo correspondente. Após sucesso, redireciona para `/login`.
-- `/login`: envia `username` e `password` para
-  `POST /api/v1/auth/login/`, armazena somente o access token e redireciona para
-  `/dashboard` ou para a rota protegida originalmente solicitada.
-- `/dashboard`: rota protegida com o gerenciamento de tarefas. Sem token válido,
-  redireciona para `/login`.
-- `/categories`: rota protegida com o gerenciamento das categorias do usuário.
-- `/login` e `/register`: rotas exclusivas para visitantes. Uma sessão válida
-  redireciona diretamente para `/dashboard`.
-
-Embora o cadastro também exija um e-mail único, o backend atual mantém
-`username` como `USERNAME_FIELD` do Django e o endpoint JWT autentica por nome de
-usuário. Login por e-mail requer uma alteração futura e explícita no backend.
-
-O estado da sessão fica em `features/auth/context`, mutations ficam em
-`features/auth/hooks` e chamadas HTTP em `features/auth/api`. Novas features
-devem repetir essa separação apenas quando tiverem código real, mantendo UI,
-schemas, tipos e serviços próximos do domínio que os utiliza.
-
-### Gerenciamento de tarefas
-
-A página protegida usa exclusivamente a API REST existente:
-
-- `GET /api/v1/tasks/` lista tarefas com `search`, `completed`, `category`,
-  `priority` e `page`. A busca possui debounce de 400 ms e os filtros são
-  processados no backend.
-- `POST /api/v1/tasks/` cria; `PATCH /api/v1/tasks/{id}/` edita ou alterna
-  `completed`; `DELETE /api/v1/tasks/{id}/` exclui após confirmação.
-- `GET /api/v1/categories/` fornece as opções do formulário e do filtro.
-- A paginação usa `count`, `next`, `previous` e `results` do DRF, com 10 itens
-  por página conforme a configuração atual do backend.
-
-O TanStack Query mantém o cache e invalida as listas após mutações. O formulário
-reutilizável de criação e edição usa React Hook Form e Zod e mapeia os erros de
-campo retornados pelo DRF.
-
-A resposta de tarefas inclui `category_name`, `is_shared` e capacidades em
-`permissions`. O frontend usa essas capacidades para ocultar edição, mudança de
-status e exclusão quando não autorizadas; o backend permanece como autoridade
-final e continua validando cada operação.
-
-### Compartilhamento de tarefas
-
-O owner abre o fluxo pelo botão “Compartilhar” no card, convida um usuário pelo
-e-mail e escolhe `read` ou `edit`. O diálogo lista acessos, permite alterar a
-permissão e exige confirmação antes de remover. As mutations invalidam a lista
-`['shares', taskId]` e o cache de tarefas.
-
-O contrato de tarefa expõe `can_view_shares` e `can_manage_shares`. Colaboradores
-podem abrir “Acessos” e consultar a lista, mas somente o owner recebe formulário
-e ações administrativas. A UI apenas reflete essas capacidades; o backend
-continua validando cada `GET`, `POST`, `PATCH` e `DELETE`.
-
-### Gerenciamento de categorias
-
-A rota protegida `/categories` consome o CRUD em `/api/v1/categories/` e oferece
-listagem, criação, edição e exclusão com confirmação. O formulário valida nomes
-entre 3 e 100 caracteres e apresenta erros de duplicidade retornados pelo DRF.
-
-`useCategories` é o ponto público da feature para leitura e também abastece o
-filtro e o formulário de tarefas. As mutations invalidam os caches de categorias
-e tarefas para refletir renomes ou exclusões sem duplicar chamadas HTTP.
-
-O modelo usa `CASCADE` ao excluir uma categoria: todas as tarefas associadas são
-removidas, enquanto tarefas sem categoria e tarefas de outras categorias
-permanecem. A confirmação da interface alerta sobre essa remoção permanente.
-
-A documentação completa dos endpoints está em `docs/api/`.
-
-### CORS
-
-`CORS_ALLOWED_ORIGINS` recebe uma lista separada por vírgulas contendo esquema,
-host e porta completos, por exemplo:
-
-```env
-CORS_ALLOWED_ORIGINS=http://localhost:5173,https://taskboard.example.com
-```
-
-A allowlist é aplicada somente às rotas `/api/`. Não use `*` em produção;
-adicione explicitamente a origem em que o frontend estiver hospedado.
-
-## Integração contínua
-
-[![CI](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml)
-
-Em cada `push` e `pull request`, o GitHub Actions valida backend, frontend e os
-builds dos Dockerfiles.
-
-## Testes E2E do frontend
-
-Os testes em `frontend/e2e/` usam Selenium WebDriver com Chrome e cobrem login
-com persistência de sessão, cadastro válido, conflito de e-mail, validações do
-cadastro, criação, edição, conclusão, reabertura, filtro, compartilhamento e
-exclusão de tarefas. O gerenciamento de categorias cobre criação, edição e
-exclusão. Page Objects concentram as interações e os títulos de `describe` e
-`it` seguem o padrão do projeto em inglês. Antes de cada cenário, o helper
-autentica pela própria API, limpa apenas os recursos do usuário `selenium_e2e`
-e recria as fixtures. Os arquivos são executados serialmente para evitar
-concorrência durante esse reset.
-
-Requisitos locais:
-
-- backend disponível localmente ou pelo Docker;
-- Node.js 22 e `npm ci` executado em `frontend/`;
-- Google Chrome instalado. O Selenium Manager incluído no `selenium-webdriver`
-  resolve o driver compatível automaticamente.
-
-Para usar o backend no Docker, suba ou recrie os serviços a partir da raiz. A
-recriação é necessária após alterar o CORS porque as variáveis do container são
-definidas no momento da criação:
-
-```bash
-docker compose up -d --build --force-recreate db backend
-docker compose exec backend python manage.py reset_e2e_data
-```
-
-Como alternativa sem Docker, o perfil `config.settings_e2e` usa
-`backend/e2e.sqlite3`, separado do PostgreSQL de desenvolvimento e ignorado pelo
-Git. Com o ambiente virtual ativado, migre e suba esse backend:
-
-```bash
-DJANGO_SETTINGS_MODULE=config.settings_e2e python backend/manage.py migrate
-DJANGO_SETTINGS_MODULE=config.settings_e2e python backend/manage.py runserver 127.0.0.1:8000
-```
-
-Em outro terminal, suba o frontend:
+Com o backend em execução, inicie o frontend:
 
 ```bash
 cd frontend
 npm run dev -- --host 127.0.0.1
 ```
 
-Execute em outro terminal a partir de `frontend/`:
+Em outro terminal, também em `frontend/`:
 
 ```bash
 npm run test:e2e
 ```
 
-O modo visual é o padrão local. Para executar como no CI:
-
-```bash
-HEADLESS=true npm run test:e2e
-```
-
-No PowerShell, use `$env:HEADLESS='true'` antes do comando. `E2E_BASE_URL`
-define a URL do frontend e `E2E_API_BASE_URL` define a API usada tanto para o
-reset quanto pelo ambiente sob teste. Os padrões são, respectivamente,
-`http://127.0.0.1:5173` e `http://localhost:8000/api/v1`.
-Ao apontar para outra API, use a mesma URL em `VITE_API_BASE_URL` antes de
-iniciar o Vite e em `E2E_API_BASE_URL` antes de executar a suíte.
-
-Em modo visual, as ações aguardam 700 ms por padrão para que o fluxo possa ser
-acompanhado. Ajuste a velocidade com `E2E_ACTION_DELAY`, em milissegundos:
+O modo visual é o padrão local. Para desacelerar as ações no PowerShell:
 
 ```powershell
 $env:HEADLESS='false'
@@ -287,40 +217,83 @@ $env:E2E_ACTION_DELAY='1200'
 npm run test:e2e
 ```
 
-Use `E2E_ACTION_DELAY=0` para execução sem atraso. O CI usa `HEADLESS=true` e
-mantém atraso zero, preservando a velocidade do pipeline.
+Para CI:
 
-O reset rápido, executado antes de cada teste, também pode ser chamado com
-`npm run e2e:reset`; ele usa a API e recria categorias e tarefas do usuário
-fixo. Para limpar também os usuários técnicos de cadastro, execute o comando
-Django `reset_e2e_data` mostrado acima. Ele remove `selenium_e2e` e usuários
-cujo nome começa com `selenium_signup_`, recria o usuário fixo e suas fixtures,
-sem truncar tabelas nem alterar outras contas. No backend SQLite, use:
-
-```bash
-DJANGO_SETTINGS_MODULE=config.settings_e2e python backend/manage.py reset_e2e_data
+```powershell
+$env:HEADLESS='true'
+$env:E2E_ACTION_DELAY='0'
+npm run test:e2e
 ```
 
-O workflow executa esse reset completo antes de iniciar os serviços e usa o
-reset rápido pela API entre cenários.
+## API
 
-O workflow `Frontend E2E` prepara o SQLite isolado, sobe backend e frontend,
-aguarda os dois serviços e roda a suíte com Chrome headless.
+Base local: `http://localhost:8000/api/v1`
 
-## Status
+| Método                   | Rota                            | Autenticação          | Descrição                                        |
+| ------------------------ | ------------------------------- | --------------------- | ------------------------------------------------ |
+| `GET`                    | `/auth/csrf/`                   | Pública               | Define o cookie CSRF legível pelo cliente.       |
+| `POST`                   | `/auth/register/`               | Pública               | Cadastra um usuário.                             |
+| `POST`                   | `/auth/login/`                  | Pública + CSRF        | Define cookies de access e refresh.              |
+| `POST`                   | `/auth/refresh/`                | Refresh cookie + CSRF | Renova os cookies sem expor tokens no corpo.     |
+| `POST`                   | `/auth/logout/`                 | Refresh cookie + CSRF | Revoga o refresh e remove os cookies.            |
+| `GET`                    | `/auth/me/`                     | JWT                   | Retorna o usuário autenticado.                   |
+| `GET`, `POST`            | `/categories/`                  | JWT                   | Lista ou cria categorias próprias.               |
+| `GET`, `PATCH`, `DELETE` | `/categories/{id}/`             | JWT                   | Consulta, edita ou exclui uma categoria própria. |
+| `GET`, `POST`            | `/tasks/`                       | JWT                   | Lista tarefas acessíveis ou cria uma tarefa.     |
+| `GET`, `PATCH`, `DELETE` | `/tasks/{id}/`                  | JWT                   | Opera sobre uma tarefa conforme a permissão.     |
+| `GET`, `POST`            | `/tasks/{task_id}/shares/`      | JWT                   | Lista ou cria compartilhamentos.                 |
+| `PATCH`, `DELETE`        | `/tasks/{task_id}/shares/{id}/` | JWT                   | Altera ou remove um compartilhamento.            |
+| `GET`                    | `/notifications/`               | JWT                   | Lista somente notificações do usuário atual.     |
+| `PATCH`                  | `/notifications/{id}/read/`     | JWT                   | Marca uma notificação própria como lida.         |
+| `POST`                   | `/notifications/read-all/`      | JWT                   | Marca todas as notificações próprias como lidas. |
 
-O backend possui autenticação JWT, CRUD privado de categorias e tarefas e
-compartilhamento com permissões de leitura ou edição. O frontend possui login,
-registro, persistência da sessão, guards de rota e gerenciamento de tarefas com
-busca, filtros, paginação, criação, edição, conclusão e exclusão, além do CRUD de
-categorias integrado aos formulários de tarefas.
-O frontend também oferece compartilhamento por e-mail, visualização de acessos e
-gerenciamento de permissões pelo owner.
+Os JWTs não são retornados pelo login ou refresh. Para um exemplo completo com `curl`, consulte [Autenticação](docs/api/authentication.md).
 
-## Decisões do domínio de tarefas
+### Documentação interativa
 
-- Conclusão e reabertura alteram `completed` via `PATCH` no próprio recurso.
-- O proprietário é sempre obtido do token JWT e não pode ser escolhido pelo
-  payload.
-- Categoria, descrição e data de vencimento são opcionais. A categoria precisa
-  pertencer ao proprietário da tarefa; sua exclusão não remove as tarefas.
+- Swagger UI: `http://localhost:8000/api/docs/`
+- ReDoc: `http://localhost:8000/api/redoc/`
+- OpenAPI Schema: `http://localhost:8000/api/schema/`
+
+## Security Considerations
+
+- access e refresh JWT são armazenados em cookies separados com `HttpOnly`; isso reduz a exposição direta dos tokens ao JavaScript, mas não elimina XSS;
+- `Secure` é controlado por `JWT_COOKIE_SECURE` e deve ser `true` com HTTPS; `SameSite` é configurável por ambiente e usa `Lax` no desenvolvimento;
+- autenticação por cookie exige CSRF nas requisições inseguras. O frontend obtém `csrftoken` e envia `X-CSRFToken` centralmente;
+- CORS aceita somente `CORS_ALLOWED_ORIGINS`, permite credenciais e não usa wildcard;
+- o refresh cookie é restrito a `/api/v1/auth/`; o access cookie é restrito a `/api/`;
+- logout tenta colocar o refresh token na blacklist e remove ambos os cookies;
+- owner e destinatário de notificação vêm de `request.user` ou da regra de domínio, nunca de campos controlados pelo cliente;
+- querysets e permissions isolam `Task`, `Category`, `TaskShare` e `Notification` por usuário;
+- segredos e origens são configurados por ambiente. Os valores de `.env.example` são apenas para desenvolvimento.
+
+Riscos restantes: uma origem frontend comprometida ainda pode emitir ações em nome do usuário; CSP, endurecimento de cookies e HTTPS dependem do ambiente de implantação. A aplicação não deve ser descrita como livre de vulnerabilidades.
+
+## Decisões de design
+
+- monólito modular e Django ORM mantêm a solução simples e transacional;
+- JWT permanece o mecanismo de autenticação, com transporte por cookies HttpOnly;
+- o refresh automático usa `401 → refresh → uma repetição`, com uma Promise compartilhada;
+- notificações de compartilhamento são criadas no service da operação, não nas views;
+- notificações de vencimento são processadas por management command idempotente, sem Celery/Redis;
+- a autorização continua obrigatoriamente no backend.
+
+Os registros completos estão no [índice de ADRs](docs/architecture/decisions/README.md).
+
+## Documentação
+
+- [Documentação da API](docs/api/README.md)
+- [Arquitetura](docs/architecture/README.md)
+- [Architecture Decision Records](docs/architecture/decisions/README.md)
+- [Autenticação](docs/api/authentication.md)
+- [Categorias](docs/api/categories.md)
+- [Tarefas](docs/api/tasks.md)
+- [Compartilhamento](docs/api/task-sharing.md)
+- [Notificações](docs/api/notifications.md)
+
+## Autoria e contato
+
+Desenvolvido por **Beatriz Chieffi**.
+
+- [LinkedIn — Beatriz Chieffi](https://www.linkedin.com/in/beatriz-daddea/)
+- [GitHub — Beatriz Chieffi](https://github.com/beatrizdaddea)

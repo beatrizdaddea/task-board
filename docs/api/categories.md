@@ -1,6 +1,7 @@
 # API de categorias
 
-Todas as rotas exigem o header `Authorization: Bearer <access_token>`. Cada
+Todas as rotas exigem um access JWT válido no cookie `taskboard_access` ou no
+header `Authorization: Bearer <access_token>`. Cada
 usuário visualiza e manipula somente as próprias categorias. Tentativas de
 acessar uma categoria de outro usuário pelo ID retornam `404 Not Found`.
 
