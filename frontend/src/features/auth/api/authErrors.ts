@@ -12,16 +12,20 @@ function firstMessage(value: unknown): string | null {
   return null
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 export function getApiFieldError(error: unknown, field: string) {
   if (!(error instanceof ApiError)) {
     return null
   }
 
-  if (typeof error.details !== 'object' || error.details === null) {
+  if (!isRecord(error.details)) {
     return null
   }
 
-  return firstMessage((error.details as Record<string, unknown>)[field])
+  return firstMessage(error.details[field])
 }
 
 export function getAuthErrorMessage(error: unknown) {
