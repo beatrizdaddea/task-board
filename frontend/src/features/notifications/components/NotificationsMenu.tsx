@@ -107,28 +107,30 @@ export function NotificationsMenu() {
         align="end"
         className="w-[min(22rem,calc(100vw-2rem))] p-1.5"
       >
-        <div className="flex items-center justify-between gap-3 px-1.5 py-1">
-          <DropdownMenuLabel className="text-foreground p-0 text-sm">
-            Notificações
-          </DropdownMenuLabel>
-          {unreadCount > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              disabled={markAllAsRead.isPending}
-              onClick={() => markAllAsRead.mutate()}
-              data-testid="notifications-read-all"
-            >
-              {markAllAsRead.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <CheckCheckIcon data-icon="inline-start" />
-              )}
-              Marcar todas como lidas
-            </Button>
-          ) : null}
-        </div>
+        <DropdownMenuGroup>
+          <div className="flex items-center justify-between gap-3 px-1.5 py-1">
+            <DropdownMenuLabel className="text-foreground p-0 text-sm">
+              Notificações
+            </DropdownMenuLabel>
+            {unreadCount > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                disabled={markAllAsRead.isPending}
+                onClick={() => markAllAsRead.mutate()}
+                data-testid="notifications-read-all"
+              >
+                {markAllAsRead.isPending ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <CheckCheckIcon data-icon="inline-start" />
+                )}
+                Marcar todas como lidas
+              </Button>
+            ) : null}
+          </div>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {notificationsQuery.isLoading ? (
           <div className="text-muted-foreground flex items-center gap-2 px-2 py-6 text-sm">
