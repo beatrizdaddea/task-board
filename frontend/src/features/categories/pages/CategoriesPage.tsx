@@ -9,6 +9,7 @@ import { useCategories } from '@/features/categories/hooks/useCategories'
 import { useCategoryMutations } from '@/features/categories/hooks/useCategoryMutations'
 import type { Category } from '@/features/categories/types/categoryTypes'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { NotificationsMenu } from '@/features/notifications/components/NotificationsMenu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,6 +103,7 @@ export function CategoriesPage() {
             className="flex shrink-0 items-center gap-1 md:gap-2"
             aria-label="Navegação principal"
           >
+            <NotificationsMenu />
             <Link
               to="/dashboard"
               className={cn(
@@ -219,8 +221,9 @@ export function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
             <AlertDialogDescription data-testid="delete-category-warning">
-              “{categoryToDelete?.name}” será removida. Todas as tarefas associadas
-              a esta categoria também serão excluídas permanentemente.
+              “{categoryToDelete?.name}” será removida. Todas as tarefas
+              associadas a esta categoria também serão excluídas
+              permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

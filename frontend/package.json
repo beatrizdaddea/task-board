@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "tsx --tsconfig tsconfig.app.json --test --test-concurrency=1 src/shared/lib/http/httpClient.test.ts src/features/notifications/api/notificationsService.test.ts",
     "test:e2e": "tsx --test --test-concurrency=1 e2e/specs/*.spec.ts",
     "e2e:reset": "tsx e2e/utils/reset.ts",
     "e2e:typecheck": "tsc --noEmit -p e2e/tsconfig.json --pretty false",

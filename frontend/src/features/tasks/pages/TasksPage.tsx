@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import { useCategories } from '@/features/categories/hooks/useCategories'
+import { NotificationsMenu } from '@/features/notifications/components/NotificationsMenu'
 import { ShareDialog } from '@/features/sharing/components/ShareDialog'
 import { TaskCategoryNav } from '@/features/tasks/components/TaskCategoryNav'
 import {
@@ -161,16 +162,19 @@ export function TasksPage() {
               Organize prioridades, prazos e andamento em um só lugar.
             </p>
           </div>
-          <Button
-            type="button"
-            className="text-muted-foreground hover:text-destructive shrink-0"
-            variant="ghost"
-            size="sm"
-            data-testid="logout"
-            onClick={logout}
-          >
-            <LogOutIcon data-icon="inline-start" /> Sair
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            <NotificationsMenu />
+            <Button
+              type="button"
+              className="text-muted-foreground hover:text-destructive"
+              variant="ghost"
+              size="sm"
+              data-testid="logout"
+              onClick={logout}
+            >
+              <LogOutIcon data-icon="inline-start" /> Sair
+            </Button>
+          </div>
         </header>
 
         {categoriesQuery.isError ? (
