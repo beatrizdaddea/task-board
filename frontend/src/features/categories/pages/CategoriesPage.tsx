@@ -31,7 +31,7 @@ import { Spinner } from '@/shared/components/ui/spinner'
 import { useToast } from '@/shared/hooks/useToast'
 import { cn } from '@/shared/lib/utils'
 
-const TOAST_DURATION = 10_000
+const TOAST_DURATION = 2500
 
 export function CategoriesPage() {
   const { add: showToast } = useToast()
@@ -218,9 +218,9 @@ export function CategoriesPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
-            <AlertDialogDescription>
-              “{categoryToDelete?.name}” será removida. As tarefas não serão
-              excluídas automaticamente.
+            <AlertDialogDescription data-testid="delete-category-warning">
+              “{categoryToDelete?.name}” será removida. Todas as tarefas associadas
+              a esta categoria também serão excluídas permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
