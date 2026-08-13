@@ -113,7 +113,7 @@ export function TasksPage() {
       await deleteTask.mutateAsync(taskToDelete.id)
       setTaskToDelete(null)
       showToast({
-        type: 'error',
+        type: 'info',
         title: 'Tarefa removida',
         description: 'Tarefa removida com sucesso!',
         timeout: TOAST_DURATION,

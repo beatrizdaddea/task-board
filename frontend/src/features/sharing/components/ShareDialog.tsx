@@ -79,7 +79,7 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
       await deleteShare.mutateAsync(shareToRemove.id)
       setShareToRemove(null)
       showToast({
-        type: 'error',
+        type: 'info',
         title: 'Compartilhamento removido',
         description: 'O acesso à tarefa foi removido com sucesso.',
         timeout: TOAST_DURATION,

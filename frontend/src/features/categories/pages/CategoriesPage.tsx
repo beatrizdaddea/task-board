@@ -52,7 +52,7 @@ export function CategoriesPage() {
       await deleteCategory.mutateAsync(categoryToDelete.id)
       setCategoryToDelete(null)
       showToast({
-        type: 'error',
+        type: 'info',
         title: 'Categoria removida',
         description: 'Categoria removida com sucesso!',
         timeout: TOAST_DURATION,
