@@ -4,9 +4,17 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   selenium:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DJANGO_SETTINGS_MODULE: config.settings_e2e
       E2E_DJANGO_SETTINGS: config.settings_e2e
