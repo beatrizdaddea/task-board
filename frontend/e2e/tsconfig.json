@@ -1,9 +1,12 @@
 {
   "extends": "../tsconfig.node.json",
   "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "types": ["node"]
+    "types": ["node"],
+    "noEmit": true
   },
   "include": ["./**/*.ts"]
 }
