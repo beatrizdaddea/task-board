@@ -1,7 +1,7 @@
 import { ApiError } from '@/shared/lib/http/ApiError'
 
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
+  import.meta.env?.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
 ).replace(/\/$/, '')
 
 const STATUS_MESSAGES: Readonly<Record<number, string>> = {
@@ -19,14 +19,13 @@ type RequestOptions = RequestInit & {
 }
 
 type HttpAuthConfig = {
-  getAccessToken: () => string | null
   onUnauthorized: () => void
 }
 
 let authConfig: HttpAuthConfig = {
-  getAccessToken: () => null,
   onUnauthorized: () => undefined,
 }
+let refreshPromise: Promise<boolean> | null = null
 
 export function configureHttpAuth(config: HttpAuthConfig) {
   authConfig = config
@@ -48,6 +47,60 @@ function getErrorMessage(status: number, body: unknown) {
   return 'Não foi possível concluir a solicitação.'
 }
 
+function getCookie(name: string) {
+  const prefix = `${encodeURIComponent(name)}=`
+  const cookie = document.cookie
+    .split(';')
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(prefix))
+
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null
+}
+
+function isUnsafeMethod(method?: string) {
+  return !['GET', 'HEAD', 'OPTIONS'].includes((method ?? 'GET').toUpperCase())
+}
+
+function addCsrfHeader(headers: Headers, method?: string) {
+  const csrfToken = getCookie('csrftoken')
+  if (csrfToken && isUnsafeMethod(method)) {
+    headers.set('X-CSRFToken', csrfToken)
+  }
+}
+
+async function performSessionRefresh() {
+  const headers = new Headers({ Accept: 'application/json' })
+  addCsrfHeader(headers, 'POST')
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = performSessionRefresh()
+      .then((refreshed) => {
+        if (!refreshed) {
+          authConfig.onUnauthorized()
+        }
+        return refreshed
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
+}
+
 async function parseBody(response: Response): Promise<unknown> {
   if (response.status === 204) {
     return undefined
@@ -62,6 +115,7 @@ async function parseBody(response: Response): Promise<unknown> {
 async function request<T>(
   path: string,
   options: RequestOptions = {},
+  hasRetried = false,
 ): Promise<T> {
   const {
     authenticated = true,
@@ -75,16 +129,14 @@ async function request<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const accessToken = authConfig.getAccessToken()
-  if (authenticated && accessToken) {
-    headers.set('Authorization', `Bearer ${accessToken}`)
-  }
+  addCsrfHeader(headers, requestInit.method)
 
   let response: Response
 
   try {
     response = await fetch(`${API_BASE_URL}/${path.replace(/^\//, '')}`, {
       ...requestInit,
+      credentials: 'include',
       headers,
     })
   } catch (error: unknown) {
@@ -99,7 +151,12 @@ async function request<T>(
 
   if (!response.ok) {
     if (response.status === 401 && authenticated) {
-      authConfig.onUnauthorized()
+      if (!hasRetried && (await refreshSession())) {
+        return request<T>(path, options, true)
+      }
+      if (hasRetried) {
+        authConfig.onUnauthorized()
+      }
     }
 
     throw new ApiError(

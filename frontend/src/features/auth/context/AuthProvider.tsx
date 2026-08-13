@@ -2,100 +2,67 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { PropsWithChildren } from 'react'
 
 import { authService } from '@/features/auth/api/authService'
-import { getTokenExpiration, isAccessTokenValid } from '@/features/auth/api/jwt'
-import { authStorageKey, tokenStorage } from '@/features/auth/api/tokenStorage'
 import {
   AuthContext,
   type AuthContextValue,
 } from '@/features/auth/context/AuthContext'
+import type { AuthenticatedUser } from '@/features/auth/types/authTypes'
 import { configureHttpAuth } from '@/shared/lib/httpClient'
 import { queryClient } from '@/shared/lib/queryClient'
 
-configureHttpAuth({
-  getAccessToken: tokenStorage.getAccessToken,
-  onUnauthorized: () => {
-    authService.logout()
-    queryClient.clear()
-  },
-})
-
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [token, setToken] = useState<string | null>(null)
+  const [user, setUser] = useState<AuthenticatedUser | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
 
-  const syncStoredToken = useCallback(() => {
-    const storedToken = tokenStorage.getAccessToken()
-
-    if (isAccessTokenValid(storedToken)) {
-      setToken(storedToken)
-    } else {
-      if (storedToken) {
-        authService.logout()
-      }
-      setToken(null)
-    }
-
-    setIsInitializing(false)
-  }, [])
-
-  const login = useCallback((accessToken: string) => {
-    tokenStorage.setAccessToken(accessToken)
-    setToken(accessToken)
-  }, [])
-
-  const logout = useCallback(() => {
-    authService.logout()
+  const clearSession = useCallback(() => {
+    setUser(null)
     queryClient.clear()
-    setToken(null)
   }, [])
 
+  const login = useCallback((authenticatedUser: AuthenticatedUser) => {
+    setUser(authenticatedUser)
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout()
+    } finally {
+      clearSession()
+    }
+  }, [clearSession])
+
   useEffect(() => {
-    syncStoredToken()
-    const unsubscribe = tokenStorage.subscribe(syncStoredToken)
-    const syncOtherTabs = (event: StorageEvent) => {
-      if (event.key === authStorageKey) {
-        syncStoredToken()
+    let isMounted = true
+    configureHttpAuth({ onUnauthorized: clearSession })
+
+    async function restoreSession() {
+      try {
+        await authService.prepareCsrf()
+        const authenticatedUser = await authService.me()
+        if (isMounted) setUser(authenticatedUser)
+      } catch {
+        if (isMounted) clearSession()
+      } finally {
+        if (isMounted) setIsInitializing(false)
       }
     }
 
-    window.addEventListener('storage', syncOtherTabs)
-
+    void restoreSession()
     return () => {
-      unsubscribe()
-      window.removeEventListener('storage', syncOtherTabs)
+      isMounted = false
+      configureHttpAuth({ onUnauthorized: () => undefined })
     }
-  }, [syncStoredToken])
-
-  useEffect(() => {
-    if (!token) {
-      return
-    }
-
-    const expiration = getTokenExpiration(token)
-    if (!expiration) {
-      logout()
-      return
-    }
-
-    const remainingTime = expiration - Date.now()
-    if (remainingTime <= 0) {
-      logout()
-      return
-    }
-
-    const expirationTimer = window.setTimeout(logout, remainingTime)
-    return () => window.clearTimeout(expirationTimer)
-  }, [logout, token])
+  }, [clearSession])
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      token,
-      isAuthenticated: Boolean(token),
+      user,
+      isAuthenticated: Boolean(user),
       isInitializing,
       login,
       logout,
     }),
-    [isInitializing, login, logout, token],
+    [isInitializing, login, logout, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

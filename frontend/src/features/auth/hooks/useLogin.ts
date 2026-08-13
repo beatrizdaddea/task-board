@@ -9,6 +9,6 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (credentials: LoginPayload) => authService.login(credentials),
-    onSuccess: ({ access }) => login(access),
+    onSuccess: (user) => login(user),
   })
 }

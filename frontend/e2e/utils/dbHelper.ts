@@ -1,8 +1,9 @@
 import testData from '../fixtures/testData.json'
 import { seleniumConfig } from '../config/selenium.config.ts'
 
-type AuthTokens = {
-  access: string
+type ApiSession = {
+  cookieHeader: string
+  csrfToken: string
 }
 
 type Task = {
@@ -21,13 +22,13 @@ type Category = {
 }
 
 type ApiOptions = RequestInit & {
-  accessToken?: string
+  session?: ApiSession
   expectedStatus?: number
 }
 
 async function apiRequest<T>(path: string, options: ApiOptions = {}) {
   const {
-    accessToken,
+    session,
     expectedStatus,
     headers: requestHeaders,
     ...requestOptions
@@ -36,7 +37,12 @@ async function apiRequest<T>(path: string, options: ApiOptions = {}) {
   headers.set('Accept', 'application/json')
 
   if (requestOptions.body) headers.set('Content-Type', 'application/json')
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  if (session) {
+    headers.set('Cookie', session.cookieHeader)
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(requestOptions.method ?? 'GET')) {
+      headers.set('X-CSRFToken', session.csrfToken)
+    }
+  }
 
   let response: Response
   try {
@@ -97,20 +103,76 @@ async function ensureUser(user: {
   )
 }
 
-async function login() {
-  return apiRequest<AuthTokens>('auth/login/', {
-    method: 'POST',
-    body: JSON.stringify({
-      username: testData.user.username,
-      password: testData.user.password,
-    }),
-  })
+function getSetCookieHeaders(response: Response) {
+  const headers = response.headers as Headers & {
+    getSetCookie?: () => string[]
+  }
+  const values = headers.getSetCookie?.()
+  if (values?.length) return values
+
+  const combinedValue = response.headers.get('set-cookie')
+  return combinedValue ? [combinedValue] : []
 }
 
-async function removeOwnedTasks(accessToken: string) {
+function readCookie(response: Response, name: string) {
+  const prefix = `${name}=`
+  const cookie = getSetCookieHeaders(response)
+    .map((value) => value.split(';', 1)[0])
+    .find((value) => value.startsWith(prefix))
+
+  if (!cookie) throw new Error(`A API E2E não retornou o cookie ${name}.`)
+  return cookie
+}
+
+async function login(): Promise<ApiSession> {
+  const csrfResponse = await fetch(`${seleniumConfig.apiBaseUrl}/auth/csrf/`, {
+    signal: AbortSignal.timeout(seleniumConfig.waitTimeout),
+  })
+  if (!csrfResponse.ok) {
+    throw new Error(
+      `Não foi possível obter o CSRF E2E: HTTP ${csrfResponse.status}`,
+    )
+  }
+
+  const csrfCookie = readCookie(csrfResponse, 'csrftoken')
+  const csrfToken = decodeURIComponent(csrfCookie.slice('csrftoken='.length))
+  const loginResponse = await fetch(
+    `${seleniumConfig.apiBaseUrl}/auth/login/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: csrfCookie,
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({
+        username: testData.user.username,
+        password: testData.user.password,
+      }),
+      signal: AbortSignal.timeout(seleniumConfig.waitTimeout),
+    },
+  )
+
+  if (!loginResponse.ok) {
+    throw new Error(
+      `Não foi possível autenticar o usuário E2E: HTTP ${loginResponse.status}`,
+    )
+  }
+
+  return {
+    cookieHeader: [
+      csrfCookie,
+      readCookie(loginResponse, 'taskboard_access'),
+      readCookie(loginResponse, 'taskboard_refresh'),
+    ].join('; '),
+    csrfToken,
+  }
+}
+
+async function removeOwnedTasks(session: ApiSession) {
   while (true) {
     const tasks = await apiRequest<TasksResponse>('tasks/?page=1', {
-      accessToken,
+      session,
     })
     const ownedTasks = tasks.results.filter(
       (task) => task.permissions.can_delete,
@@ -121,7 +183,7 @@ async function removeOwnedTasks(accessToken: string) {
       ownedTasks.map((task) =>
         apiRequest<void>(`tasks/${task.id}/`, {
           method: 'DELETE',
-          accessToken,
+          session,
           expectedStatus: 204,
         }),
       ),
@@ -129,15 +191,15 @@ async function removeOwnedTasks(accessToken: string) {
   }
 }
 
-async function removeCategories(accessToken: string) {
+async function removeCategories(session: ApiSession) {
   const categories = await apiRequest<Category[]>('categories/', {
-    accessToken,
+    session,
   })
   await Promise.all(
     categories.map((category) =>
       apiRequest<void>(`categories/${category.id}/`, {
         method: 'DELETE',
-        accessToken,
+        session,
         expectedStatus: 204,
       }),
     ),
@@ -145,14 +207,14 @@ async function removeCategories(accessToken: string) {
 }
 
 async function createTask(
-  accessToken: string,
+  session: ApiSession,
   categoryId: number | null,
   title: string,
   completed: boolean,
 ) {
   await apiRequest<Task>('tasks/', {
     method: 'POST',
-    accessToken,
+    session,
     expectedStatus: 201,
     body: JSON.stringify({
       title,
@@ -168,31 +230,31 @@ async function createTask(
 }
 
 export async function seedUncategorizedTask(title: string) {
-  const { access } = await login()
-  await createTask(access, null, title, false)
+  const session = await login()
+  await createTask(session, null, title, false)
 }
 
 export async function resetTestData() {
   await ensureUser(testData.user)
   await ensureUser(testData.shareRecipient)
-  const { access } = await login()
+  const session = await login()
 
-  await removeOwnedTasks(access)
-  await removeCategories(access)
+  await removeOwnedTasks(session)
+  await removeCategories(session)
 
   const category = await apiRequest<Category>('categories/', {
     method: 'POST',
-    accessToken: access,
+    session,
     expectedStatus: 201,
     body: JSON.stringify({ name: testData.categories.primary }),
   })
   await apiRequest<Category>('categories/', {
     method: 'POST',
-    accessToken: access,
+    session,
     expectedStatus: 201,
     body: JSON.stringify({ name: testData.categories.disposable }),
   })
 
-  await createTask(access, category.id, testData.tasks.open, false)
-  await createTask(access, category.id, testData.tasks.completed, true)
+  await createTask(session, category.id, testData.tasks.open, false)
+  await createTask(session, category.id, testData.tasks.completed, true)
 }

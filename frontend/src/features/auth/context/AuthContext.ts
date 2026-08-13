@@ -1,11 +1,13 @@
 import { createContext } from 'react'
 
+import type { AuthenticatedUser } from '@/features/auth/types/authTypes'
+
 export type AuthContextValue = {
-  token: string | null
+  user: AuthenticatedUser | null
   isAuthenticated: boolean
   isInitializing: boolean
-  login: (accessToken: string) => void
-  logout: () => void
+  login: (user: AuthenticatedUser) => void
+  logout: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

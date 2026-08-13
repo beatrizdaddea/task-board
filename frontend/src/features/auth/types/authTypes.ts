@@ -3,9 +3,8 @@ import type {
   RegisterInput,
 } from '@/features/auth/schemas/authSchemas'
 
-export type AuthTokens = {
-  access: string
-  refresh: string
+export type AuthResponse = {
+  detail: string
 }
 
 export type LoginPayload = LoginInput
@@ -18,7 +17,4 @@ export type RegisteredUser = {
   email: string
 }
 
-export type JwtPayload = {
-  exp?: number
-  user_id?: number
-}
+export type AuthenticatedUser = RegisteredUser
