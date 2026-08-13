@@ -34,14 +34,24 @@ export class TasksPage {
   }
 
   async dismissToast() {
-    const closeButtons = await this.driver.findElements(
-      By.css('[data-slot="toast-close"]'),
+    const closeButton = await this.driver.wait(
+      until.elementLocated(
+        By.css(
+          '[data-slot="toast"]:not([data-starting-style]):not([data-ending-style]):not([data-limited]) [data-slot="toast-close"]',
+        ),
+      ),
+      seleniumConfig.waitTimeout,
     )
-    if (closeButtons.length === 0) return
 
-    const closeButton = closeButtons[0]
+    await this.driver.wait(
+      until.elementIsVisible(closeButton),
+      seleniumConfig.waitTimeout,
+    )
+    await this.driver.wait(
+      until.elementIsEnabled(closeButton),
+      seleniumConfig.waitTimeout,
+    )
     await closeButton.click()
-    await waitForAction()
     await this.driver.wait(
       until.stalenessOf(closeButton),
       seleniumConfig.waitTimeout,
