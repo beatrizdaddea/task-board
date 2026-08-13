@@ -30,7 +30,9 @@ class AuthenticatedUserView(generics.RetrieveAPIView):
         return self.request.user
 
 
-def set_token_cookie(response, name: str, token: str, *, max_age: int, path: str):
+def set_token_cookie(
+    response: Response, name: str, token: str, *, max_age: int, path: str
+) -> None:
     response.set_cookie(
         name,
         token,
@@ -42,7 +44,7 @@ def set_token_cookie(response, name: str, token: str, *, max_age: int, path: str
     )
 
 
-def set_auth_cookies(response, access_token: str, refresh_token: str) -> None:
+def set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
     set_token_cookie(
         response,
         settings.JWT_ACCESS_COOKIE_NAME,
@@ -59,7 +61,7 @@ def set_auth_cookies(response, access_token: str, refresh_token: str) -> None:
     )
 
 
-def clear_auth_cookies(response) -> None:
+def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         settings.JWT_ACCESS_COOKIE_NAME,
         path=settings.JWT_ACCESS_COOKIE_PATH,
