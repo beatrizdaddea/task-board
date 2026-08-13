@@ -1,5 +1,4 @@
 import pytest
-from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -7,42 +6,7 @@ from apps.categories.models import Category
 
 pytestmark = pytest.mark.django_db
 
-User = get_user_model()
 CATEGORIES_URL = "/api/v1/categories/"
-
-
-@pytest.fixture
-def api_client() -> APIClient:
-    return APIClient()
-
-
-@pytest.fixture
-def owner():
-    return User.objects.create_user(
-        username="owner",
-        email="owner@example.com",
-        password="safe-password-123",
-    )
-
-
-@pytest.fixture
-def other_user():
-    return User.objects.create_user(
-        username="other",
-        email="other@example.com",
-        password="safe-password-123",
-    )
-
-
-@pytest.fixture
-def authenticated_client(api_client: APIClient, owner) -> APIClient:
-    api_client.force_authenticate(user=owner)
-    return api_client
-
-
-@pytest.fixture
-def category(owner) -> Category:
-    return Category.objects.create(name="Trabalho", owner=owner)
 
 
 def category_detail_url(category: Category) -> str:
