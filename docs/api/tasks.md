@@ -26,7 +26,9 @@ compartilhamentos está documentado em `docs/api/task-sharing.md`.
     "can_edit": true,
     "can_edit_category": true,
     "can_delete": true,
-    "can_change_status": true
+    "can_change_status": true,
+    "can_view_shares": true,
+    "can_manage_shares": true
   },
   "created_at": "2026-08-11T14:30:00-03:00",
   "updated_at": "2026-08-11T14:30:00-03:00"

@@ -1,8 +1,9 @@
 # API de compartilhamento de tarefas
 
 O compartilhamento concede acesso explícito a uma tarefa sem transferir sua
-propriedade. Todas as rotas exigem `Authorization: Bearer <access_token>` e
-somente o owner da tarefa pode utilizá-las.
+propriedade. Todas as rotas exigem `Authorization: Bearer <access_token>`. O
+owner administra os acessos; usuários com `read` ou `edit` podem apenas listar
+os compartilhamentos da tarefa que já conseguem acessar.
 
 O destinatário é identificado por email porque este campo é único no domínio de
 usuários. Não existe endpoint de pesquisa de usuários, evitando exposição de
@@ -11,14 +12,15 @@ owner informou, sem expor o ID do usuário.
 
 ## Níveis de permissão
 
-| Ação | Owner | `read` | `edit` |
-| --- | --- | --- | --- |
-| Visualizar a tarefa | Sim | Sim | Sim |
-| Editar campos da tarefa | Sim | Não | Sim |
-| Concluir ou reabrir | Sim | Não | Sim |
-| Alterar categoria | Sim | Não | Não |
-| Excluir a tarefa | Sim | Não | Não |
-| Listar ou gerenciar compartilhamentos | Sim | Não | Não |
+| Ação                                        | Owner | `read` | `edit` |
+| ------------------------------------------- | ----- | ------ | ------ |
+| Visualizar a tarefa                         | Sim   | Sim    | Sim    |
+| Editar campos da tarefa                     | Sim   | Não    | Sim    |
+| Concluir ou reabrir                         | Sim   | Não    | Sim    |
+| Alterar categoria                           | Sim   | Não    | Não    |
+| Excluir a tarefa                            | Sim   | Não    | Não    |
+| Listar compartilhamentos                    | Sim   | Sim    | Sim    |
+| Criar, alterar ou remover compartilhamentos | Sim   | Não    | Não    |
 
 Usuários com `edit` podem alterar `title`, `description`, `completed`,
 `priority` e `due_date`. A categoria permanece exclusiva do owner porque deve
@@ -43,12 +45,12 @@ pertencer a ele.
 - Método: `GET`
 - Rota: `/api/v1/tasks/{task_id}/shares/`
 - Autenticação: obrigatória
-- Autorização: somente o owner da tarefa
+- Autorização: owner ou usuário com compartilhamento `read`/`edit` na tarefa
 - Parâmetro de rota: `task_id`, identificador inteiro da tarefa
 - Request: sem corpo
 - Response `200 OK`: lista de representações dos compartilhamentos
 - Principais erros: `401 Unauthorized` sem token válido; `404 Not Found` para
-  tarefa inexistente ou que não pertence ao usuário
+  tarefa inexistente ou sem relação com o usuário
 
 ## Compartilhar tarefa
 
