@@ -10,11 +10,17 @@ class TaskAccessPermission(permissions.BasePermission):
         if obj.owner_id == request.user.pk:
             return True
 
-        share_permission = (
-            obj.shares.filter(user=request.user)
-            .values_list("permission", flat=True)
-            .first()
-        )
+        current_user_shares = getattr(obj, "current_user_shares", None)
+        if current_user_shares is None:
+            share_permission = (
+                obj.shares.filter(user=request.user)
+                .values_list("permission", flat=True)
+                .first()
+            )
+        else:
+            share_permission = (
+                current_user_shares[0].permission if current_user_shares else None
+            )
 
         if request.method in permissions.SAFE_METHODS:
             return share_permission is not None
