@@ -17,3 +17,4 @@ uma decisão mudar, um novo ADR deve substituir explicitamente o anterior.
 - [ADR-0006: JWT em cookies HttpOnly](./0006-jwt-http-only-cookies.md)
 - [ADR-0007: Refresh automático reativo no frontend](./0007-reactive-session-refresh.md)
 - [ADR-0008: Processamento de vencimentos por management command](./0008-due-notifications-management-command.md)
+- [ADR-0009: Quality gates e smoke test na integração contínua](./0009-ci-quality-gates.md)

@@ -9,7 +9,7 @@
 ![TypeScript 5.8](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL 17](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![CI](https://github.com/beatrizdaddea/task-flow/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/beatrizdaddea/task-board/actions/workflows/ci.yml/badge.svg)
 
 **Status:** funcional. Cadastro, autenticação, categorias, tarefas, compartilhamento e notificações internas estão implementados.
 
@@ -193,6 +193,12 @@ npm run lint
 npm run typecheck
 npm run build
 ```
+
+### Integração contínua
+
+Os workflows executam os mesmos checks relevantes em pushes e pull requests. A CI principal valida lint e formatação, migrations, Django, OpenAPI, testes backend com cobertura mínima de 90%, testes e build frontend e a inicialização conjunta do Docker Compose. Um workflow separado executa os fluxos críticos com Selenium.
+
+Execuções anteriores da mesma branch são canceladas quando um commit mais novo é enviado. Os jobs possuem timeout e acesso somente de leitura ao conteúdo do repositório. Publicação de imagens e deploy não fazem parte da automação atual.
 
 ### E2E com Selenium
 
