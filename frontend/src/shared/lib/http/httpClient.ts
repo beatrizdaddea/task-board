@@ -1,7 +1,15 @@
 import { ApiError } from '@/shared/lib/http/ApiError'
 
+function getDefaultApiBaseUrl() {
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
+  }
+
+  return 'http://localhost:8000/api/v1'
+}
+
 const API_BASE_URL = (
-  import.meta.env?.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
+  import.meta.env?.VITE_API_BASE_URL ?? getDefaultApiBaseUrl()
 ).replace(/\/$/, '')
 
 const STATUS_MESSAGES: Readonly<Record<number, string>> = {

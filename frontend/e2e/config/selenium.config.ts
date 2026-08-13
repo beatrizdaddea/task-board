@@ -5,7 +5,7 @@ function numberFromEnvironment(name: string, fallback: number) {
 
 export const seleniumConfig = {
   baseUrl: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5173',
-  apiBaseUrl: process.env.E2E_API_BASE_URL ?? 'http://localhost:8000/api/v1',
+  apiBaseUrl: process.env.E2E_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1',
   headless: process.env.HEADLESS === 'true',
   actionDelay: numberFromEnvironment(
     'E2E_ACTION_DELAY',
