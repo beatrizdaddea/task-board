@@ -17,11 +17,34 @@ type LoginLocationState = {
   registered?: boolean
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isLoginLocationState(value: unknown): value is LoginLocationState {
+  if (!isRecord(value)) return false
+
+  const from = value.from
+  return (
+    (value.registered === undefined || typeof value.registered === 'boolean') &&
+    (from === undefined ||
+      (isRecord(from) &&
+        (from.pathname === undefined || typeof from.pathname === 'string')))
+  )
+}
+
+function getSafeDestination(state: LoginLocationState | null) {
+  const pathname = state?.from?.pathname
+  return pathname?.startsWith('/') && !pathname.startsWith('//')
+    ? pathname
+    : '/dashboard'
+}
+
 export function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const state = location.state as LoginLocationState | null
-  const destination = state?.from?.pathname ?? '/dashboard'
+  const state = isLoginLocationState(location.state) ? location.state : null
+  const destination = getSafeDestination(state)
 
   return (
     <main className="bg-muted/40 grid min-h-svh place-items-center p-6">
