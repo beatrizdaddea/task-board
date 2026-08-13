@@ -86,7 +86,8 @@ minúsculas.
 - Parâmetro de rota: `id`, identificador inteiro da categoria
 - Request: sem corpo
 - Response `204 No Content`: sem corpo
-- Comportamento atual: tarefas associadas não são excluídas; o campo `category`
-  dessas tarefas passa a ser `null`.
+- Comportamento: a categoria e todas as tarefas associadas são excluídas em
+  cascata. Tarefas sem categoria e tarefas vinculadas a outras categorias não
+  são afetadas.
 - Principais erros: `401 Unauthorized` sem access token válido; `404 Not Found`
   para categoria inexistente ou pertencente a outro usuário

@@ -190,10 +190,9 @@ entre 3 e 100 caracteres e apresenta erros de duplicidade retornados pelo DRF.
 filtro e o formulário de tarefas. As mutations invalidam os caches de categorias
 e tarefas para refletir renomes ou exclusões sem duplicar chamadas HTTP.
 
-O modelo atual usa `SET_NULL` ao excluir uma categoria associada: nenhuma tarefa
-é excluída. O frontend também reconhece respostas `400` ou `409` como categoria
-em uso e apresenta uma mensagem específica caso o backend passe a bloquear essa
-operação.
+O modelo usa `CASCADE` ao excluir uma categoria: todas as tarefas associadas são
+removidas, enquanto tarefas sem categoria e tarefas de outras categorias
+permanecem. A confirmação da interface alerta sobre essa remoção permanente.
 
 A documentação completa dos endpoints está em `docs/api/`.
 
