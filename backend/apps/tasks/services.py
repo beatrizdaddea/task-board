@@ -12,24 +12,21 @@ def share_task(*, task: Task, user: AbstractBaseUser, permission: str) -> TaskSh
             {"user_email": "Uma tarefa não pode ser compartilhada com o owner."}
         )
 
-    if TaskShare.objects.filter(task=task, user=user).exists():
-        raise ValidationError(
-            {"user_email": "A tarefa já foi compartilhada com este usuário."}
-        )
+    with transaction.atomic():
+        try:
+            with transaction.atomic():
+                share = TaskShare.objects.create(
+                    task=task,
+                    user=user,
+                    permission=permission,
+                )
+        except IntegrityError as error:
+            raise ValidationError(
+                {"user_email": "A tarefa já foi compartilhada com este usuário."}
+            ) from error
 
-    try:
-        with transaction.atomic():
-            share = TaskShare.objects.create(
-                task=task,
-                user=user,
-                permission=permission,
-            )
-            notify_task_shared(task=task, recipient=user)
-            return share
-    except IntegrityError as error:
-        raise ValidationError(
-            {"user_email": "A tarefa já foi compartilhada com este usuário."}
-        ) from error
+        notify_task_shared(task=task, recipient=user)
+        return share
 
 
 def update_share_permission(*, share: TaskShare, permission: str) -> TaskShare:

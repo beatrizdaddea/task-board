@@ -1,10 +1,12 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.categories.models import Category
 from apps.notifications.models import Notification
+from apps.tasks import services as task_services
 from apps.tasks.models import Task, TaskShare
 
 pytestmark = pytest.mark.django_db
@@ -236,6 +238,25 @@ def test_repeated_share_does_not_create_duplicate_notification(
         ).count()
         == 1
     )
+
+
+def test_notification_failure_rolls_back_new_share(
+    task: Task, other_user, monkeypatch
+) -> None:
+    def fail_notification(**kwargs):
+        raise IntegrityError("notification write failed")
+
+    monkeypatch.setattr(task_services, "notify_task_shared", fail_notification)
+
+    with pytest.raises(IntegrityError, match="notification write failed"):
+        task_services.share_task(
+            task=task,
+            user=other_user,
+            permission=TaskShare.Permission.READ,
+        )
+
+    assert TaskShare.objects.exists() is False
+    assert Notification.objects.exists() is False
 
 
 def test_task_update_does_not_create_another_share_notification(
