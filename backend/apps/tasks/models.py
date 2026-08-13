@@ -28,7 +28,7 @@ class Task(models.Model):
         Category,
         blank=True,
         null=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name="tasks",
     )
     created_at = models.DateTimeField(auto_now_add=True)
