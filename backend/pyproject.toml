@@ -15,3 +15,10 @@ select = ["E", "F", "I", "UP"]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py", "*_test.py"]
 addopts = "-ra"
+
+[tool.coverage.run]
+branch = true
+omit = ["*/migrations/*", "*/__init__.py", "*/asgi.py", "*/wsgi.py"]
+
+[tool.coverage.report]
+show_missing = true
