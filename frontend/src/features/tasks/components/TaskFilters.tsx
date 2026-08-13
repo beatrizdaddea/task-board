@@ -108,6 +108,7 @@ export function TaskFilters(props: TaskFiltersProps) {
       <Button
         type="button"
         className="hidden shrink-0 lg:inline-flex"
+        data-testid="create-task"
         onClick={props.onCreate}
       >
         <PlusIcon data-icon="inline-start" />
@@ -181,7 +182,7 @@ function FilterSelect<TValue extends string>({
           if (nextValue !== null) onValueChange(nextValue)
         }}
       >
-        <SelectTrigger id={id} className="w-full">
+        <SelectTrigger id={id} className="w-full" data-testid={`${id}-filter`}>
           <SelectValue placeholder={placeholder}>
             {(selectedValue: TValue | null) =>
               options.find((option) => option.value === selectedValue)?.label ??

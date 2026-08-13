@@ -81,7 +81,10 @@ export function CategoriesPage() {
   }
 
   return (
-    <main className="min-h-svh px-4 pt-4 pb-24 sm:px-6 md:py-6">
+    <main
+      className="min-h-svh px-4 pt-4 pb-24 sm:px-6 md:py-6"
+      data-testid="categories-page"
+    >
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="flex items-center justify-between gap-4">
           <div className="min-w-0">
@@ -154,6 +157,7 @@ export function CategoriesPage() {
             <Button
               type="button"
               className="hidden shrink-0 md:inline-flex"
+              data-testid="create-category"
               onClick={() => setFormCategory(null)}
             >
               <PlusIcon data-icon="inline-start" /> Nova categoria
@@ -225,6 +229,7 @@ export function CategoriesPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               type="button"
+              data-testid="confirm-delete-category"
               variant="destructive"
               disabled={deleteCategory.isPending}
               onClick={() => void confirmDelete()}

@@ -144,7 +144,10 @@ export function TasksPage() {
     : 0
 
   return (
-    <main className="min-h-svh px-4 pt-4 pb-24 sm:px-6 lg:py-6">
+    <main
+      className="min-h-svh px-4 pt-4 pb-24 sm:px-6 lg:py-6"
+      data-testid="tasks-page"
+    >
       <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
         <header className="flex items-center justify-between gap-4 border-b pb-4">
           <div className="flex min-w-0 flex-col gap-1">
@@ -163,6 +166,7 @@ export function TasksPage() {
             className="text-muted-foreground hover:text-destructive shrink-0"
             variant="ghost"
             size="sm"
+            data-testid="logout"
             onClick={logout}
           >
             <LogOutIcon data-icon="inline-start" /> Sair
@@ -243,6 +247,8 @@ export function TasksPage() {
             />
 
             <div
+              data-testid="tasks-list-region"
+              data-loading={tasksQuery.isFetching}
               className={cn(
                 tasksQuery.isFetching && 'opacity-70 transition-opacity',
               )}
@@ -364,6 +370,7 @@ export function TasksPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               type="button"
+              data-testid="confirm-delete-task"
               variant="destructive"
               disabled={deleteTask.isPending}
               onClick={() => void confirmDelete()}

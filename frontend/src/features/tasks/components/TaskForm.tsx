@@ -150,7 +150,12 @@ export function TaskForm({
   })
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={submitTask} noValidate>
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={submitTask}
+      data-testid="task-form"
+      noValidate
+    >
       <FieldGroup>
         <Field data-invalid={Boolean(errors.title)}>
           <FieldLabel htmlFor="task-title">Título</FieldLabel>
@@ -310,6 +315,7 @@ export function TaskForm({
         </Button>
         <Button
           type="submit"
+          data-testid="task-form-submit"
           disabled={
             mutation.isPending || categoriesLoading || !hasCategoryOptions
           }

@@ -81,7 +81,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </Alert>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={loginMutation.isPending}>
+      <Button
+        type="submit"
+        size="lg"
+        disabled={loginMutation.isPending}
+        data-testid="login-submit"
+      >
         {loginMutation.isPending ? <Spinner data-icon="inline-start" /> : null}
         {loginMutation.isPending ? 'Entrando...' : 'Entrar'}
       </Button>

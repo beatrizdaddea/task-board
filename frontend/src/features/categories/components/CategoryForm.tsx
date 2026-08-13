@@ -76,7 +76,12 @@ export function CategoryForm({
   })
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={submitCategory} noValidate>
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={submitCategory}
+      data-testid="category-form"
+      noValidate
+    >
       <FieldGroup>
         <Field data-invalid={Boolean(errors.name)}>
           <FieldLabel htmlFor="category-name">Nome</FieldLabel>
@@ -103,7 +108,11 @@ export function CategoryForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={mutation.isPending}>
+        <Button
+          type="submit"
+          disabled={mutation.isPending}
+          data-testid="category-form-submit"
+        >
           {mutation.isPending ? <Spinner data-icon="inline-start" /> : null}
           {mutation.isPending ? 'Salvando...' : 'Salvar categoria'}
         </Button>

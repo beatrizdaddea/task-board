@@ -25,11 +25,16 @@ export function CategoryItem({
     <Card
       size="sm"
       className="h-full transition-shadow focus-within:shadow-md hover:shadow-md"
+      data-testid="category-card"
     >
       <CardHeader className="min-w-0">
         <CardTitle className="flex min-w-0 items-center gap-2">
           <TagIcon />
-          <span className="truncate" title={category.name}>
+          <span
+            className="truncate"
+            title={category.name}
+            data-testid="category-name"
+          >
             {category.name}
           </span>
         </CardTitle>
@@ -42,6 +47,7 @@ export function CategoryItem({
         <CardAction className="flex items-center gap-2">
           <Button
             type="button"
+            data-testid="edit-category"
             variant="ghost"
             size="icon-sm"
             aria-label={`Editar categoria ${category.name}`}
@@ -52,6 +58,7 @@ export function CategoryItem({
           </Button>
           <Button
             type="button"
+            data-testid="delete-category"
             variant="destructive"
             size="icon-sm"
             aria-label={`Excluir categoria ${category.name}`}

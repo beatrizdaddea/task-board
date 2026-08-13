@@ -62,10 +62,14 @@ export function TaskCard({
   const categoryLabel = categoryName ?? task.category_name
 
   return (
-    <Card className="h-full min-w-0 gap-3 py-3 transition-shadow hover:shadow-sm">
+    <Card
+      className="h-full min-w-0 gap-3 py-3 transition-shadow hover:shadow-sm"
+      data-testid="task-card"
+    >
       <CardHeader className="px-3">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge
+            data-testid="task-status"
             variant="outline"
             className={cn(
               'rounded-md px-2 text-[11px]',
@@ -111,6 +115,7 @@ export function TaskCard({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <CardTitle>
             <h3
+              data-testid="task-title"
               className={cn(
                 'truncate text-sm leading-snug font-semibold',
                 task.completed && 'text-muted-foreground line-through',
@@ -121,7 +126,10 @@ export function TaskCard({
             </h3>
           </CardTitle>
           {task.description ? (
-            <CardDescription className="line-clamp-1 text-xs">
+            <CardDescription
+              className="line-clamp-1 text-xs"
+              data-testid="task-description"
+            >
               {task.description}
             </CardDescription>
           ) : null}
@@ -148,6 +156,7 @@ export function TaskCard({
               {canEdit ? (
                 <Button
                   type="button"
+                  data-testid="edit-task"
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground hover:text-foreground"
@@ -161,6 +170,7 @@ export function TaskCard({
               {canViewShares ? (
                 <Button
                   type="button"
+                  data-testid="share-task"
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground hover:text-foreground"
@@ -178,6 +188,7 @@ export function TaskCard({
               {canDelete ? (
                 <Button
                   type="button"
+                  data-testid="delete-task"
                   variant="ghost"
                   size="icon-sm"
                   className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive"
@@ -237,6 +248,7 @@ function StatusControl({
   return (
     <Button
       type="button"
+      data-testid="task-status-toggle"
       variant="ghost"
       size="icon-sm"
       className={cn(

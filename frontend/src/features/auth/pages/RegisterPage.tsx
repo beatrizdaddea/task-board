@@ -14,7 +14,10 @@ export function RegisterPage() {
   const navigate = useNavigate()
 
   return (
-    <main className="bg-muted/40 grid min-h-svh place-items-center p-6">
+    <main
+      className="bg-muted/40 grid min-h-svh place-items-center p-6"
+      data-testid="signup-page"
+    >
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Criar conta</CardTitle>

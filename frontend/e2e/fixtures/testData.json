@@ -1,0 +1,32 @@
+{
+  "user": {
+    "username": "selenium_e2e",
+    "email": "selenium.e2e@taskboard.local",
+    "password": "TaskBoard-E2E-2026!"
+  },
+  "shareRecipient": {
+    "username": "selenium_recipient",
+    "email": "selenium.recipient@taskboard.local",
+    "password": "Recipient-E2E-2026!"
+  },
+  "signup": {
+    "usernamePrefix": "selenium_signup_",
+    "emailPrefix": "selenium.signup.",
+    "password": "Signup-E2E-2026!",
+    "weakPassword": "1234567"
+  },
+  "categories": {
+    "primary": "Categoria E2E",
+    "disposable": "Categoria E2E removível",
+    "created": "Categoria criada pelo Selenium",
+    "updated": "Categoria atualizada pelo Selenium"
+  },
+  "tasks": {
+    "open": "Tarefa E2E em aberto",
+    "completed": "Tarefa E2E concluída",
+    "created": "Tarefa criada pelo Selenium",
+    "createdDescription": "Fluxo crítico de criação validado pelo Selenium.",
+    "updated": "Tarefa atualizada pelo Selenium",
+    "updatedDescription": "Fluxo de edição validado pelo Selenium."
+  }
+}

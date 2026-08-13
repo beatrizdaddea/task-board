@@ -76,6 +76,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     <form
       className="flex flex-col gap-5"
       onSubmit={submitRegistration}
+      data-testid="signup-form"
       noValidate
     >
       <FieldGroup>
@@ -87,7 +88,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             aria-invalid={Boolean(errors.username)}
             {...register('username')}
           />
-          <FieldError errors={[errors.username]} />
+          <FieldError
+            data-testid="signup-username-error"
+            errors={[errors.username]}
+          />
         </Field>
 
         <Field data-invalid={Boolean(errors.email)}>
@@ -99,7 +103,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             aria-invalid={Boolean(errors.email)}
             {...register('email')}
           />
-          <FieldError errors={[errors.email]} />
+          <FieldError
+            data-testid="signup-email-error"
+            errors={[errors.email]}
+          />
         </Field>
 
         <Field data-invalid={Boolean(errors.password)}>
@@ -111,7 +118,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             aria-invalid={Boolean(errors.password)}
             {...register('password')}
           />
-          <FieldError errors={[errors.password]} />
+          <FieldError
+            data-testid="signup-password-error"
+            errors={[errors.password]}
+          />
         </Field>
 
         <Field data-invalid={Boolean(errors.passwordConfirmation)}>
@@ -125,18 +135,26 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             aria-invalid={Boolean(errors.passwordConfirmation)}
             {...register('passwordConfirmation')}
           />
-          <FieldError errors={[errors.passwordConfirmation]} />
+          <FieldError
+            data-testid="signup-password-confirmation-error"
+            errors={[errors.passwordConfirmation]}
+          />
         </Field>
       </FieldGroup>
 
       {submitError ? (
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-testid="signup-error">
           <AlertCircleIcon />
           <AlertDescription>{submitError}</AlertDescription>
         </Alert>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={registerMutation.isPending}>
+      <Button
+        type="submit"
+        size="lg"
+        disabled={registerMutation.isPending}
+        data-testid="signup-submit"
+      >
         {registerMutation.isPending ? (
           <Spinner data-icon="inline-start" />
         ) : null}

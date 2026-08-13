@@ -79,7 +79,12 @@ export function ShareForm({ taskId, onSuccess }: ShareFormProps) {
   })
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={submitShare} noValidate>
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={submitShare}
+      data-testid="share-form"
+      noValidate
+    >
       <FieldGroup className="grid gap-4 sm:grid-cols-[1fr_10rem]">
         <Field data-invalid={Boolean(errors.user_email)}>
           <FieldLabel htmlFor="share-user-email">E-mail do usuário</FieldLabel>
@@ -147,6 +152,7 @@ export function ShareForm({ taskId, onSuccess }: ShareFormProps) {
         type="submit"
         className="self-start"
         disabled={createShare.isPending}
+        data-testid="share-submit"
       >
         {createShare.isPending ? <Spinner data-icon="inline-start" /> : null}
         {createShare.isPending ? 'Compartilhando...' : 'Compartilhar'}

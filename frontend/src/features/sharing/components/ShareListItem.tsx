@@ -33,9 +33,14 @@ export function ShareListItem(props: ShareListItemProps) {
     )?.label ?? props.share.permission
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+    <li
+      className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+      data-testid="share-list-item"
+    >
       <div className="min-w-0">
-        <p className="truncate font-medium">{props.share.user_email}</p>
+        <p className="truncate font-medium" data-testid="share-user-email">
+          {props.share.user_email}
+        </p>
         {!props.canManage ? (
           <Badge variant="secondary" className="mt-1">
             {permissionLabel}

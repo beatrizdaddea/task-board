@@ -34,7 +34,7 @@ export function LoginPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {state?.registered ? (
-            <Alert>
+            <Alert data-testid="registration-success">
               <CheckCircle2Icon />
               <AlertDescription>
                 Conta criada. Entre com suas credenciais.
