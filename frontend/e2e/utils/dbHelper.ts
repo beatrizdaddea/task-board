@@ -146,7 +146,7 @@ async function removeCategories(accessToken: string) {
 
 async function createTask(
   accessToken: string,
-  categoryId: number,
+  categoryId: number | null,
   title: string,
   completed: boolean,
 ) {
@@ -165,6 +165,11 @@ async function createTask(
       due_date: null,
     }),
   })
+}
+
+export async function seedUncategorizedTask(title: string) {
+  const { access } = await login()
+  await createTask(access, null, title, false)
 }
 
 export async function resetTestData() {

@@ -19,7 +19,9 @@
     "primary": "Categoria E2E",
     "disposable": "Categoria E2E removível",
     "created": "Categoria criada pelo Selenium",
-    "updated": "Categoria atualizada pelo Selenium"
+    "updated": "Categoria atualizada pelo Selenium",
+    "cascade": "Categoria cascata Selenium",
+    "unaffected": "Categoria preservada Selenium"
   },
   "tasks": {
     "open": "Tarefa E2E em aberto",
@@ -27,6 +29,9 @@
     "created": "Tarefa criada pelo Selenium",
     "createdDescription": "Fluxo crítico de criação validado pelo Selenium.",
     "updated": "Tarefa atualizada pelo Selenium",
-    "updatedDescription": "Fluxo de edição validado pelo Selenium."
+    "updatedDescription": "Fluxo de edição validado pelo Selenium.",
+    "cascade": "Tarefa removida por cascata",
+    "unaffected": "Tarefa de outra categoria preservada",
+    "uncategorized": "Tarefa sem categoria preservada"
   }
 }

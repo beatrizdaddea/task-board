@@ -51,9 +51,31 @@ export class CategoriesPage {
   }
 
   async deleteCategory(name: string) {
+    await this.openDeleteConfirmation(name)
+    await this.confirmCategoryDeletion(name)
+  }
+
+  async openDeleteConfirmation(name: string) {
     const card = await this.findCategory(name)
     await card.findElement(By.css('[data-testid="delete-category"]')).click()
     await waitForAction()
+    const warning = await this.driver.wait(
+      until.elementLocated(By.css('[data-testid="delete-category-warning"]')),
+      seleniumConfig.waitTimeout,
+    )
+    await this.driver.wait(
+      until.elementIsVisible(warning),
+      seleniumConfig.waitTimeout,
+    )
+  }
+
+  async deleteConfirmationMessage() {
+    return this.driver
+      .findElement(By.css('[data-testid="delete-category-warning"]'))
+      .getText()
+  }
+
+  async confirmCategoryDeletion(name: string) {
     const confirmation = await this.driver.wait(
       until.elementLocated(By.css('[data-testid="confirm-delete-category"]')),
       seleniumConfig.waitTimeout,

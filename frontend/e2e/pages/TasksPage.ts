@@ -6,6 +6,11 @@ import { waitForAction } from '../utils/actionDelay.ts'
 export class TasksPage {
   constructor(private readonly driver: WebDriver) {}
 
+  async open() {
+    await this.driver.get(`${seleniumConfig.baseUrl}/dashboard`)
+    await this.waitUntilReady()
+  }
+
   async waitUntilReady() {
     await this.driver.wait(
       until.elementLocated(By.css('[data-testid="tasks-page"]')),
