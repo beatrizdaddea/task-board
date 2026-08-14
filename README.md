@@ -105,6 +105,13 @@ Mais detalhes em [Arquitetura do TaskBoard](docs/architecture/README.md).
 
 ## Como executar localmente
 
+### Clonar o repositório
+
+```bash
+git clone https://github.com/beatrizdaddea/task-board.git
+cd task-board
+```
+
 ### Pré-requisitos
 
 - Git;
@@ -112,7 +119,9 @@ Mais detalhes em [Arquitetura do TaskBoard](docs/architecture/README.md).
 - ou Python 3.13+, Node.js 22+, npm e PostgreSQL 17 para execução manual;
 - Chrome para os testes E2E.
 
-### Docker Compose
+### Docker Compose (recomendado)
+
+Na raiz do repositório, crie o arquivo de variáveis de ambiente e inicie os serviços:
 
 ```bash
 cp .env.example .env
@@ -133,11 +142,79 @@ Serviços locais:
 - Swagger UI: `http://localhost:8000/api/docs/`;
 - ReDoc: `http://localhost:8000/api/redoc/`.
 
-### Execução manual
+Para encerrar os serviços, pressione `Ctrl+C` e execute `docker compose down`. Os dados do PostgreSQL permanecem no volume `postgres_data`.
+
+### Execução manual no Windows (PowerShell)
+
+Na execução manual, o PostgreSQL precisa estar iniciado e acessível em `localhost:5432`. No primeiro uso, conecte-se com um usuário administrador do PostgreSQL:
+
+```powershell
+psql -U postgres
+```
+
+Crie o usuário e o banco usados pela aplicação. Esses comandos são necessários somente no primeiro uso:
+
+```sql
+CREATE USER taskboard WITH PASSWORD 'change-me';
+CREATE DATABASE taskboard OWNER taskboard;
+```
+
+Saia do `psql` com `\q`. Em seguida, na raiz do projeto, crie e ative um ambiente virtual:
+
+```powershell
+py -3.13 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\.venv\Scripts\Activate.ps1
+```
+
+Instale as dependências com o `pip` associado ao Python do ambiente virtual:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r backend\requirements.txt
+python -m django --version
+```
+
+Configure a conexão local com o PostgreSQL no terminal em que o backend será executado:
+
+```powershell
+$env:POSTGRES_DB = "taskboard"
+$env:POSTGRES_USER = "taskboard"
+$env:POSTGRES_PASSWORD = "change-me"
+$env:POSTGRES_HOST = "localhost"
+$env:POSTGRES_PORT = "5432"
+```
+
+Caso tenha escolhido outros nomes ou outra senha ao configurar o PostgreSQL, use os mesmos valores nessas variáveis. Depois, aplique as migrations e inicie o backend:
+
+```powershell
+python backend\manage.py migrate
+python backend\manage.py runserver
+```
+
+Em outro terminal, execute o frontend:
+
+```powershell
+cd frontend
+npm ci
+$env:VITE_API_BASE_URL = "http://localhost:8000/api/v1"
+npm run dev
+```
+
+O frontend estará disponível em `http://localhost:5173` e o backend em `http://localhost:8000`.
+
+### Execução manual no Linux ou macOS
 
 ```bash
-python -m venv .venv
-pip install -r backend/requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r backend/requirements.txt
+export POSTGRES_DB=taskboard
+export POSTGRES_USER=taskboard
+export POSTGRES_PASSWORD=change-me
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
 python backend/manage.py migrate
 python backend/manage.py runserver
 ```
@@ -147,10 +224,19 @@ Em outro terminal:
 ```bash
 cd frontend
 npm ci
+export VITE_API_BASE_URL=http://localhost:8000/api/v1
 npm run dev
 ```
 
-`VITE_API_BASE_URL` deve apontar para `http://localhost:8000/api/v1`. Use o mesmo hostname (`localhost` ou `127.0.0.1`) no frontend, no backend e nas origens confiáveis para evitar incompatibilidades de cookie e CSRF.
+O banco e o usuário devem existir previamente no PostgreSQL, com os mesmos valores definidos nas variáveis acima.
+
+### Solução de problemas na execução local
+
+- `ModuleNotFoundError: No module named 'django'`: confirme que o ambiente está ativo com `python -c "import sys; print(sys.executable)"`. O caminho deve terminar em `.venv\Scripts\python.exe` no Windows. Execute novamente `python -m pip install -r backend\requirements.txt` somente depois de ativá-lo.
+- `password authentication failed for user "taskboard"`: o PostgreSQL está respondendo, mas usuário ou senha não correspondem às variáveis `POSTGRES_*`. Corrija as credenciais no PostgreSQL ou no terminal e valide com `psql -h localhost -p 5432 -U taskboard -d taskboard`.
+- Alterar `.env` não altera credenciais de um banco já criado pelo Docker. Se houver dados importantes, preserve o volume e ajuste a senha no PostgreSQL. Remover o volume recria o banco e apaga seus dados.
+- O Django lê as variáveis do processo na execução manual; ele não carrega `.env` automaticamente. O Docker Compose, por sua vez, utiliza o `.env` da raiz.
+- Use o mesmo hostname (`localhost` ou `127.0.0.1`) no frontend, no backend e nas origens confiáveis para evitar incompatibilidades de cookie e CSRF.
 
 ## Notificações de vencimento
 
